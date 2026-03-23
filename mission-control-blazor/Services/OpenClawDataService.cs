@@ -69,6 +69,51 @@ public class OpenClawDataService
     private static string? FirstLine(string? v) =>
         v?.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0);
 
+    /// <summary>
+    /// Parse a timestamp node that may be either:
+    ///   - a JSON string  "2026-03-22T20:05:32.304Z"
+    ///   - a JSON number  1774252940729  (Unix milliseconds)
+    /// Returns null if the node is absent or unparseable.
+    /// </summary>
+    private static DateTime? ParseNodeDateTime(JsonNode? node)
+    {
+        if (node is null) return null;
+        try
+        {
+            // Number → treat as Unix milliseconds
+            if (node is JsonValue val)
+            {
+                if (val.TryGetValue<long>(out var ms))
+                    return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime;
+                if (val.TryGetValue<double>(out var msD))
+                    return DateTimeOffset.FromUnixTimeMilliseconds((long)msD).UtcDateTime;
+                if (val.TryGetValue<string>(out var s) && DateTime.TryParse(s, out var dt))
+                    return dt.ToUniversalTime();
+            }
+        }
+        catch { /* fall through */ }
+        return null;
+    }
+
+    /// <summary>
+    /// Safely get a string value from a JsonNode that might actually be any scalar type.
+    /// </summary>
+    private static string? GetStringFlexible(JsonNode? node)
+    {
+        if (node is null) return null;
+        try
+        {
+            if (node is JsonValue val)
+            {
+                if (val.TryGetValue<string>(out var s)) return s;
+                // For non-string scalars fall back to ToString
+                return val.ToJsonString().Trim('"');
+            }
+        }
+        catch { /* fall through */ }
+        return null;
+    }
+
     private static (string? provider, string? model) ParseBannerModel(List<JsonNode> lines)
     {
         var text = lines
@@ -164,11 +209,11 @@ public class OpenClawDataService
                 var outp = meta["outputTokens"]?.GetValue<long>() ?? -1L;
                 if (inp >= 0 || outp >= 0)
                 {
-                    var updatedAt = meta["updatedAt"]?.GetValue<string>();
+                    var updatedAt = ParseNodeDateTime(meta["updatedAt"]);
                     records.Add(new TokenUsageRecord(
                         $"{sessionKey}:summary",
                         resolvedId, sessionKey,
-                        updatedAt is not null ? DateTime.Parse(updatedAt).ToUniversalTime() : DateTime.UtcNow,
+                        updatedAt ?? DateTime.UtcNow,
                         null, provider, model,
                         meta["abortedLastRun"]?.GetValue<bool>() == true ? RunStatus.Error : RunStatus.Success,
                         Math.Max(0, inp), Math.Max(0, outp),
