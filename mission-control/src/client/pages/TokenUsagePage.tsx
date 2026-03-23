@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../lib/api';
-import { TimeRange } from '../lib/types';
+import { DashboardSource, TimeRange } from '../lib/types';
 import { usePollingQuery } from '../lib/usePollingQuery';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { SummaryCard } from '../components/SummaryCard';
 import { StatusBadge } from '../components/StatusBadge';
+import { SourceList } from '../components/SourceList';
 
-export function TokenUsagePage() {
+export function TokenUsagePage({ sources }: { sources: DashboardSource[] }) {
   const [range, setRange] = useState<TimeRange>('24h');
   const [agent, setAgent] = useState('all');
   const [provider, setProvider] = useState('all');
@@ -39,6 +40,10 @@ export function TokenUsagePage() {
 
   const perfData = useMemo(() => filteredRecords.filter((item) => item.tokensPerSecond).map((item) => ({ time: new Date(item.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), model: item.model, tokensPerSecond: item.tokensPerSecond! })), [filteredRecords]);
   const models = data?.filterOptions.models ?? [];
+  const visibleBreakdown = useMemo(() => (data?.breakdown ?? []).filter((row) =>
+    (provider === 'all' || row.provider === provider) &&
+    (model === 'all' || row.model === model)
+  ), [data, provider, model]);
 
   if (loading && !data) return <LoadingState />;
   if (error && !data) return <ErrorState message={error} />;
@@ -68,6 +73,20 @@ export function TokenUsagePage() {
 
       <div className="summary-grid">{data.summaryCards.map((card) => <SummaryCard key={card.label} {...card} />)}</div>
 
+      <section className="panel">
+        <div className="panel-header"><h3>Avg response speed by model</h3></div>
+        <div className="window-grid">
+          {visibleBreakdown.length ? visibleBreakdown.slice(0, 6).map((row) => (
+            <article key={`${row.provider}:${row.model}:speed`} className="mini-panel">
+              <strong>{row.model}</strong>
+              <p className="muted">{row.provider}</p>
+              <h3>{row.avgTokensPerSecond?.toFixed(1) ?? '—'} tok/s</h3>
+              <p className="muted">{row.avgLatencyMs ? `${Math.round(row.avgLatencyMs)} ms avg latency` : 'Latency unavailable'}</p>
+            </article>
+          )) : <p className="muted">No model speed data matches the current filters.</p>}
+        </div>
+      </section>
+
       <section className="panel chart-panel">
         <div className="panel-header"><h3>Token volume by interval</h3></div>
         <ResponsiveContainer width="100%" height={320}>
@@ -77,7 +96,7 @@ export function TokenUsagePage() {
             <YAxis stroke="#94a3b8" />
             <Tooltip />
             <Legend />
-            {models.slice(0, 6).map((modelName, index) => <Bar key={modelName} dataKey={modelName} stackId="usage" fill={[ '#60a5fa', '#818cf8', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6' ][index % 6]} />)}
+            {models.slice(0, 6).map((modelName, index) => <Bar key={modelName} dataKey={modelName} stackId="usage" fill={['#60a5fa', '#818cf8', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6'][index % 6]} />)}
           </BarChart>
         </ResponsiveContainer>
       </section>
@@ -100,7 +119,7 @@ export function TokenUsagePage() {
         <table className="table">
           <thead><tr><th>Model</th><th>Provider</th><th>Requests</th><th>Input</th><th>Output</th><th>Avg tok/s</th><th>Avg latency</th><th>Errors</th></tr></thead>
           <tbody>
-            {data.breakdown.map((row) => (
+            {visibleBreakdown.map((row) => (
               <tr key={`${row.provider}:${row.model}`}>
                 <td>{row.model}</td><td>{row.provider}</td><td>{row.requests}</td><td>{row.inputTokens.toLocaleString()}</td><td>{row.outputTokens.toLocaleString()}</td><td>{row.avgTokensPerSecond?.toFixed(1) ?? '—'}</td><td>{row.avgLatencyMs ? `${Math.round(row.avgLatencyMs)} ms` : '—'}</td><td>{row.errorCount}</td>
               </tr>
@@ -142,6 +161,8 @@ export function TokenUsagePage() {
         </div>
         {data.notes.map((note) => <p key={note} className="muted">• {note}</p>)}
       </section>
+
+      <SourceList sources={sources} />
     </div>
   );
 }

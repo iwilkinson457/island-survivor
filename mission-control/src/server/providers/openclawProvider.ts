@@ -32,6 +32,10 @@ function extractAgentId(sessionKey: string): string {
   return parts.length > 1 ? parts[1] : sessionKey;
 }
 
+function normalizeName(value?: string): string {
+  return (value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
 function normalizeStatus(stopReason?: string, outputText?: string): RunStatus {
   const text = `${stopReason ?? ''} ${outputText ?? ''}`.toLowerCase();
   if (text.includes('rate')) return 'rate-limited';
@@ -47,12 +51,61 @@ function parseDurationMs(start?: string, end?: string): number | undefined {
   return Number.isFinite(ms) && ms > 0 ? ms : undefined;
 }
 
+function parseConfiguredModelFromBanner(lines: any[]): { provider?: string; model?: string } {
+  const text = lines
+    .filter((line) => line.type === 'message' && line.message?.role === 'assistant')
+    .flatMap((line) => safeArray<any>(line.message?.content))
+    .filter((item) => item?.type === 'text' && typeof item.text === 'string')
+    .map((item) => item.text)
+    .join('\n');
+
+  const match = text.match(/Model:\s*([a-z0-9-]+)\/([^\s]+)/i);
+  if (!match) return {};
+  return { provider: match[1].toLowerCase(), model: match[2] };
+}
+
+function inferAgentIdFromRun(run: any, knownAgentIds: string[]): string | undefined {
+  const haystacks = [run?.label, run?.task, run?.requesterDisplayKey, run?.childSessionKey]
+    .filter((value): value is string => typeof value === 'string');
+
+  for (const agentId of knownAgentIds) {
+    const normalizedAgentId = normalizeName(agentId);
+    if (haystacks.some((value) => normalizeName(value).includes(normalizedAgentId))) return agentId;
+  }
+
+  return undefined;
+}
+
+function resolveAgentId(sessionKey: string, lines: any[], childSessionAgentMap: Map<string, string>, knownAgentIds: string[]): string {
+  const directAgentId = extractAgentId(sessionKey);
+  if (directAgentId !== 'main') return directAgentId;
+
+  const mappedChildAgent = childSessionAgentMap.get(sessionKey);
+  if (mappedChildAgent) return mappedChildAgent;
+
+  const text = JSON.stringify(lines).toLowerCase();
+  for (const agentId of knownAgentIds) {
+    if (agentId !== 'main' && text.includes(agentId.toLowerCase())) return agentId;
+  }
+
+  return directAgentId;
+}
+
 export function loadOpenClawData() {
   const config = readJson<any>(openClawConfigPath, {});
   const runs = readJson<any>(subagentRunsPath, { runs: {} });
   const agentEntries = safeArray<any>(config?.agents?.list);
-  const sessions: Array<{ sessionKey: string; meta: any; filePath?: string }> = [];
+  const knownAgentIds = agentEntries.map((agent) => agent.id);
+  const childSessionAgentMap = new Map<string, string>();
 
+  for (const run of Object.values<any>(runs.runs ?? {})) {
+    const inferredAgentId = inferAgentIdFromRun(run, knownAgentIds);
+    if (inferredAgentId && typeof run?.childSessionKey === 'string') {
+      childSessionAgentMap.set(run.childSessionKey, inferredAgentId);
+    }
+  }
+
+  const sessions: Array<{ sessionKey: string; meta: any; filePath?: string }> = [];
   for (const agent of agentEntries) {
     const sessionIndexPath = path.join(sessionsRoot, agent.id, 'sessions', 'sessions.json');
     const sessionIndex = readJson<Record<string, any>>(sessionIndexPath, {});
@@ -63,18 +116,25 @@ export function loadOpenClawData() {
 
   const records: TokenUsageRecord[] = [];
   const taskMap = new Map<string, AgentTask[]>();
+  const configuredProviders = new Set<string>();
 
   for (const entry of sessions) {
-    const agentId = extractAgentId(entry.sessionKey);
     const meta = entry.meta;
+    const lines = entry.filePath && fs.existsSync(entry.filePath) ? readJsonLines(entry.filePath) : [];
+    const agentId = resolveAgentId(entry.sessionKey, lines, childSessionAgentMap, knownAgentIds);
+    const parsedBanner = parseConfiguredModelFromBanner(lines);
+    const provider = meta.modelProvider ?? parsedBanner.provider ?? 'unknown';
+    const model = meta.model ?? parsedBanner.model ?? 'unknown';
+    configuredProviders.add(provider);
+
     if (typeof meta?.inputTokens === 'number' || typeof meta?.outputTokens === 'number') {
       records.push({
         id: `${entry.sessionKey}:summary`,
         agentId,
         sessionKey: entry.sessionKey,
         startedAt: new Date(meta.updatedAt ?? Date.now()).toISOString(),
-        provider: meta.modelProvider ?? 'unknown',
-        model: meta.model ?? 'unknown',
+        provider,
+        model,
         status: meta.abortedLastRun ? 'error' : 'success',
         inputTokens: meta.inputTokens ?? 0,
         outputTokens: meta.outputTokens ?? 0,
@@ -84,54 +144,59 @@ export function loadOpenClawData() {
       });
     }
 
-    if (entry.filePath && fs.existsSync(entry.filePath)) {
-      const lines = readJsonLines(entry.filePath);
-      const assistantMessages = lines.filter((line) => line.type === 'message' && line.message?.role === 'assistant' && line.message?.usage);
-      for (const line of assistantMessages) {
-        const usage = line.message.usage ?? {};
-        const endedAt = line.timestamp;
-        const startedAt = lines.find((candidate) => candidate.id === line.parentId)?.timestamp ?? endedAt;
-        const latencyMs = parseDurationMs(startedAt, endedAt);
-        const total = (usage.input ?? 0) + (usage.output ?? 0);
-        records.push({
-          id: `${entry.sessionKey}:${line.id}`,
-          agentId,
-          sessionKey: entry.sessionKey,
-          startedAt,
-          endedAt,
-          provider: line.message.provider ?? meta.modelProvider ?? 'unknown',
-          model: line.message.model ?? meta.model ?? 'unknown',
-          status: normalizeStatus(line.message.stopReason, JSON.stringify(line.message.content ?? '')),
-          inputTokens: usage.input ?? 0,
-          outputTokens: usage.output ?? 0,
-          cacheReadTokens: usage.cacheRead ?? 0,
-          totalTokens: usage.totalTokens ?? total,
-          latencyMs,
-          tokensPerSecond: latencyMs && total > 0 ? total / (latencyMs / 1000) : undefined,
-          source: 'session-jsonl'
-        });
-      }
+    const assistantMessages = lines.filter((line) => line.type === 'message' && line.message?.role === 'assistant' && line.message?.usage);
+    for (const line of assistantMessages) {
+      const usage = line.message.usage ?? {};
+      const endedAt = line.timestamp;
+      const startedAt = lines.find((candidate) => candidate.id === line.parentId)?.timestamp ?? endedAt;
+      const latencyMs = parseDurationMs(startedAt, endedAt);
+      const total = (usage.input ?? 0) + (usage.output ?? 0);
+      const resolvedProvider = line.message.provider === 'openclaw' && line.message.model === 'gateway-injected'
+        ? parsedBanner.provider ?? provider
+        : line.message.provider ?? provider;
+      const resolvedModel = line.message.provider === 'openclaw' && line.message.model === 'gateway-injected'
+        ? parsedBanner.model ?? model
+        : line.message.model ?? model;
+      configuredProviders.add(resolvedProvider);
 
-      const completedTasks: AgentTask[] = assistantMessages.slice(-8).map((line) => ({
-        id: line.id,
-        title: extractTaskTitle(lines, line.parentId) ?? `Conversation response ${line.id.slice(0, 8)}`,
-        status: normalizeStatus(line.message?.stopReason) === 'error' ? 'failed' : 'completed',
-        startedAt: lines.find((candidate) => candidate.id === line.parentId)?.timestamp,
-        endedAt: line.timestamp,
-        durationMs: parseDurationMs(lines.find((candidate) => candidate.id === line.parentId)?.timestamp, line.timestamp),
-        model: line.message?.model ?? meta.model,
-        provider: line.message?.provider ?? meta.modelProvider,
-        tokensIn: line.message?.usage?.input,
-        tokensOut: line.message?.usage?.output,
-        source: 'session-jsonl',
-        failureReason: normalizeStatus(line.message?.stopReason) === 'error' ? line.message?.stopReason : undefined
-      }));
-      taskMap.set(agentId, [...(taskMap.get(agentId) ?? []), ...completedTasks]);
+      records.push({
+        id: `${entry.sessionKey}:${line.id}`,
+        agentId,
+        sessionKey: entry.sessionKey,
+        startedAt,
+        endedAt,
+        provider: resolvedProvider,
+        model: resolvedModel,
+        status: normalizeStatus(line.message.stopReason, JSON.stringify(line.message.content ?? '')),
+        inputTokens: usage.input ?? 0,
+        outputTokens: usage.output ?? 0,
+        cacheReadTokens: usage.cacheRead ?? 0,
+        totalTokens: usage.totalTokens ?? total,
+        latencyMs,
+        tokensPerSecond: latencyMs && total > 0 ? total / (latencyMs / 1000) : undefined,
+        source: 'session-jsonl'
+      });
     }
+
+    const completedTasks: AgentTask[] = assistantMessages.slice(-8).map((line) => ({
+      id: line.id,
+      title: extractTaskTitle(lines, line.parentId) ?? `Conversation response ${line.id.slice(0, 8)}`,
+      status: normalizeStatus(line.message?.stopReason) === 'error' ? 'failed' : 'completed',
+      startedAt: lines.find((candidate) => candidate.id === line.parentId)?.timestamp,
+      endedAt: line.timestamp,
+      durationMs: parseDurationMs(lines.find((candidate) => candidate.id === line.parentId)?.timestamp, line.timestamp),
+      model: line.message?.model ?? model,
+      provider: line.message?.provider ?? provider,
+      tokensIn: line.message?.usage?.input,
+      tokensOut: line.message?.usage?.output,
+      source: 'session-jsonl',
+      failureReason: normalizeStatus(line.message?.stopReason) === 'error' ? line.message?.stopReason : undefined
+    }));
+    taskMap.set(agentId, [...(taskMap.get(agentId) ?? []), ...completedTasks]);
   }
 
   for (const run of Object.values<any>(runs.runs ?? {})) {
-    const agentId = run.label?.includes('codefather') ? 'codefather' : extractAgentId(run.requesterSessionKey ?? 'main');
+    const agentId = inferAgentIdFromRun(run, knownAgentIds) ?? extractAgentId(run.requesterSessionKey ?? 'main');
     const task: AgentTask = {
       id: run.runId,
       title: firstLine(run.task) ?? 'Subagent task',
@@ -149,6 +214,7 @@ export function loadOpenClawData() {
     config,
     records,
     taskMap,
+    configuredProviders: [...configuredProviders].sort(),
     dataSources: [
       { name: 'OpenClaw config', path: openClawConfigPath, live: fs.existsSync(openClawConfigPath), purpose: 'Agent definitions, model config, providers, gateway metadata' },
       { name: 'Agent sessions index', path: path.join(agentsRoot, '<agent>', 'sessions', 'sessions.json'), live: true, purpose: 'Current session totals and model/provider metadata' },
@@ -174,9 +240,10 @@ export function buildTokenUsage(range: TimeRange) {
   const data = loadOpenClawData();
   const start = range === '24h' ? hoursAgo(24) : range === '7d' ? daysAgo(7) : daysAgo(30);
   const relevant = data.records.filter((record) => new Date(record.startedAt) >= start);
+  const trackedProviders = [...new Set(relevant.map((item) => item.provider))].sort();
   const filters = {
     agents: [...new Set(relevant.map((item) => item.agentId))].sort(),
-    providers: [...new Set(relevant.map((item) => item.provider))].sort(),
+    providers: [...new Set([...trackedProviders, ...data.configuredProviders])].sort(),
     models: [...new Set(relevant.map((item) => item.model))].sort(),
     statuses: [...new Set(relevant.map((item) => item.status))].sort() as RunStatus[]
   };
@@ -233,7 +300,9 @@ export function buildTokenUsage(range: TimeRange) {
   const totalOutput = relevant.reduce((sum, item) => sum + item.outputTokens, 0);
   const totalTokens = totalInput + totalOutput;
   const avgTokens = totalRequests ? totalTokens / totalRequests : 0;
-  const avgSpeed = average(perf.map((item) => item.tokensPerSecond));
+  const totalCacheRead = relevant.reduce((sum, item) => sum + (item.cacheReadTokens ?? 0), 0);
+  const anthropicTracked = relevant.filter((item) => item.provider === 'anthropic' && item.totalTokens > 0);
+  const anthropicSeenButZero = data.records.some((item) => item.provider === 'anthropic');
 
   const fiveHours = data.records.filter((item) => new Date(item.startedAt) >= hoursAgo(5));
   const sevenDays = data.records.filter((item) => new Date(item.startedAt) >= daysAgo(7));
@@ -248,7 +317,7 @@ export function buildTokenUsage(range: TimeRange) {
       { label: 'Total output tokens', value: totalOutput.toLocaleString() },
       { label: 'Total requests', value: totalRequests.toLocaleString() },
       { label: 'Avg tokens / request', value: avgTokens.toFixed(0) },
-      { label: 'Avg response speed', value: avgSpeed ? `${avgSpeed.toFixed(1)} tok/s` : 'Unavailable', helpText: 'Inferred from token count and JSONL timestamps when present' },
+      { label: 'Cache read tokens', value: totalCacheRead.toLocaleString(), helpText: 'Tracked when present in OpenClaw usage payloads' },
       { label: 'Most used model', value: mostUsedModel }
     ],
     buckets,
@@ -264,7 +333,12 @@ export function buildTokenUsage(range: TimeRange) {
     records: relevant.sort((a, b) => +new Date(b.startedAt) - +new Date(a.startedAt)).slice(0, 150),
     notes: [
       'OpenAI/Anthropic/Ollama provider quota ceilings are not exposed in local OpenClaw data, so the limits panel shows tracked usage only.',
-      'Latency and tokens/sec are inferred from session JSONL timestamps and may be unavailable for summary-only session rows.'
+      'Latency and tokens/sec are inferred from session JSONL timestamps and may be unavailable for summary-only session rows.',
+      anthropicTracked.length
+        ? `Anthropic tracked usage is included (${anthropicTracked.length} request${anthropicTracked.length === 1 ? '' : 's'} in the selected range).`
+        : anthropicSeenButZero
+          ? 'Anthropic is configured/detected, but there are no tracked Anthropic token events in the available OpenClaw data for the selected range.'
+          : 'No Anthropic provider records were found in the available OpenClaw data for the selected range.'
     ]
   };
 }

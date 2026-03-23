@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { AgentCard, AgentStatus } from '../lib/types';
+import { AgentCard, AgentStatus, DashboardSource } from '../lib/types';
 import { usePollingQuery } from '../lib/usePollingQuery';
 import { EmptyState, ErrorState, LoadingState } from '../components/States';
 import { StatusBadge } from '../components/StatusBadge';
+import { SourceList } from '../components/SourceList';
 
-export function AgentsPage() {
+export function AgentsPage({ sources }: { sources: DashboardSource[] }) {
   const { data, loading, error } = usePollingQuery(() => api.agents(), 15000, []);
   const [status, setStatus] = useState<'all' | AgentStatus>('all');
   const [agent, setAgent] = useState('all');
@@ -86,6 +87,8 @@ export function AgentsPage() {
       <section className="panel">
         {data.notes.map((note) => <p key={note} className="muted">• {note}</p>)}
       </section>
+
+      <SourceList sources={sources} />
     </div>
   );
 }
