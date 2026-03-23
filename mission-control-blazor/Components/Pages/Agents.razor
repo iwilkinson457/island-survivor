@@ -1,0 +1,234 @@
+@page "/agents"
+@rendermode InteractiveServer
+@inject OpenClawDataService DataService
+
+<PageTitle>Agents · Mission Control</PageTitle>
+
+@if (_data is null)
+{
+    <div class="panel state-panel"><div class="state-stack"><span class="live-dot"></span><strong>Loading agent telemetry…</strong></div></div>
+}
+else
+{
+    <div class="page-grid">
+        @* ── Header ── *@
+        <section class="page-header panel">
+            <div>
+                <p class="eyebrow">Agent operations</p>
+                <h2>Roster, status, and recent work</h2>
+                <p class="muted">Control-room roster view of all configured OpenClaw agents. Refreshes every @(_data.RefreshMs / 1000)s.</p>
+            </div>
+            <div class="refresh-note">
+                <span class="live-pill"><span class="live-dot"></span> Live</span>
+                <span class="muted compact">@Filtered.Count agent@(Filtered.Count == 1 ? "" : "s") in view</span>
+            </div>
+        </section>
+
+        @* ── Filters ── *@
+        <section class="filter-toolbar panel">
+            <div class="filter-group">
+                <label>Status</label>
+                <select @bind="_filterStatus">
+                    <option value="">All status</option>
+                    @foreach (var s in _data.FilterOptions.Statuses)
+                    {
+                        <option value="@s">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Agent</label>
+                <select @bind="_filterAgent">
+                    <option value="">All agents</option>
+                    @foreach (var a in _data.FilterOptions.Agents)
+                    {
+                        <option value="@a">@a</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Sort</label>
+                <select @bind="_sort">
+                    <option value="activity">Recent activity</option>
+                    <option value="queue">Queue size</option>
+                    <option value="errors">Errors</option>
+                </select>
+            </div>
+            <div class="filter-group filter-search">
+                <label>Search</label>
+                <input placeholder="Agent name, id, or model" @bind="_search" @bind:event="oninput" />
+            </div>
+            <label class="toggle-pill">
+                <input type="checkbox" @bind="_activeOnly" />
+                <span>Active only</span>
+            </label>
+        </section>
+
+        @if (!Filtered.Any())
+        {
+            <div class="panel state-panel"><div class="state-stack">No agents match the current filters.</div></div>
+        }
+        else
+        {
+            <section class="dashboard-grid dashboard-grid-agents">
+                @* ── Roster ── *@
+                <article class="panel roster-panel">
+                    <div class="section-head">
+                        <div><p class="eyebrow">Roster</p><h3>Configured agents</h3></div>
+                    </div>
+                    <div class="roster-list">
+                        @foreach (var agent in Filtered)
+                        {
+                            <button type="button" class="agent-row @(_selectedId == agent.AgentId ? "selected" : "")"
+                                    @onclick="() => _selectedId = agent.AgentId">
+                                <div class="agent-row-main">
+                                    <div class="agent-name-block">
+                                        <div class="agent-row-title">
+                                            <StatusBadge Status="@agent.Status.ToString().ToLower()" DotOnly="true" />
+                                            <strong>@agent.Name</strong>
+                                        </div>
+                                        <span class="muted compact">@(agent.PrimaryModel ?? "Model unavailable")</span>
+                                    </div>
+                                    <StatusBadge Status="@agent.Status.ToString().ToLower()" />
+                                </div>
+                                <div class="agent-row-stats">
+                                    <span><label>Queue</label><strong>@agent.QueueCount</strong></span>
+                                    <span><label>Running</label><strong>@agent.TasksInProgress</strong></span>
+                                    <span><label>Done 24h</label><strong>@agent.CompletedLast24h</strong></span>
+                                    <span><label>Requests</label><strong>@agent.TokenUsageSummary.Requests</strong></span>
+                                </div>
+                                <div class="agent-row-meta">
+                                    <span class="muted">@agent.AgentId</span>
+                                    <span class="muted">Last active @(agent.LastActivityAt.HasValue ? RelativeTime(agent.LastActivityAt.Value) : "unknown")</span>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                </article>
+
+                @* ── Detail panel ── *@
+                @if (Selected is not null)
+                {
+                    <article class="panel detail-panel">
+                        <div class="section-head">
+                            <div><p class="eyebrow">Selected agent</p><h3>@Selected.Name</h3></div>
+                            <StatusBadge Status="@Selected.Status.ToString().ToLower()" />
+                        </div>
+
+                        <div class="detail-metrics">
+                            <div class="stat-cell">
+                                <span class="stat-label">Primary model</span>
+                                <strong class="stat-value small">@(Selected.PrimaryModel ?? "Unknown")</strong>
+                            </div>
+                            <div class="stat-cell">
+                                <span class="stat-label">Fallbacks</span>
+                                <strong class="stat-value small">@(Selected.FallbackModels.Any() ? string.Join(", ", Selected.FallbackModels) : "None")</strong>
+                            </div>
+                            <div class="stat-cell">
+                                <span class="stat-label">Input / output (24h)</span>
+                                <strong class="stat-value small">@Selected.TokenUsageSummary.InputTokens.ToString("N0") / @Selected.TokenUsageSummary.OutputTokens.ToString("N0")</strong>
+                            </div>
+                            <div class="stat-cell">
+                                <span class="stat-label">Requests (24h)</span>
+                                <strong class="stat-value small">@Selected.TokenUsageSummary.Requests.ToString("N0")</strong>
+                            </div>
+                        </div>
+
+                        <div class="detail-sections">
+                            <TaskBlock Title="Current tasks" Tasks="Selected.CurrentTasks" Empty="No current tasks." />
+                            <TaskBlock Title="Completed tasks" Tasks="Selected.CompletedTasks.Take(10).ToList()" Empty="No completed tasks." />
+                            <TaskBlock Title="Failures (24h)" Tasks="Selected.FailuresLast24h" Empty="No recent failures." />
+                        </div>
+
+                        <div class="panel-subsection" style="margin-top:0.75rem;">
+                            <h4>Agent notes</h4>
+                            <ul class="notes-list compact-notes">
+                                @foreach (var note in Selected.DetailNotes)
+                                {
+                                    <li>@note</li>
+                                }
+                            </ul>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+
+        @* ── System notes ── *@
+        <section class="panel notes-panel">
+            <div class="section-head">
+                <div><p class="eyebrow">Interpretation</p><h3>Agent notes</h3></div>
+            </div>
+            <ul class="notes-list">
+                @foreach (var note in _data.Notes)
+                {
+                    <li>@note</li>
+                }
+            </ul>
+        </section>
+
+        <SourceList Sources="_data.DataSources" />
+    </div>
+}
+
+@* ── Task block sub-component ── *@
+@code {
+    AgentsData? _data;
+    string _filterStatus = "";
+    string _filterAgent = "";
+    string _sort = "activity";
+    string _search = "";
+    bool _activeOnly;
+    string? _selectedId;
+    System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        _data = DataService.GetAgents();
+        _timer = new System.Threading.Timer(_ =>
+        {
+            _data = DataService.GetAgents();
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
+    }
+
+    List<AgentCard> Filtered
+    {
+        get
+        {
+            if (_data is null) return [];
+            var q = _data.Agents.AsEnumerable();
+            if (!string.IsNullOrEmpty(_filterStatus)) q = q.Where(a => a.Status.ToString().ToLower() == _filterStatus);
+            if (!string.IsNullOrEmpty(_filterAgent)) q = q.Where(a => a.AgentId == _filterAgent);
+            if (_activeOnly) q = q.Where(a => a.Status is AgentStatus.Busy || a.TasksInProgress > 0);
+            if (!string.IsNullOrEmpty(_search))
+            {
+                var term = _search.ToLower();
+                q = q.Where(a => a.Name.ToLower().Contains(term)
+                    || a.AgentId.ToLower().Contains(term)
+                    || (a.PrimaryModel ?? "").ToLower().Contains(term));
+            }
+            q = _sort switch
+            {
+                "queue" => q.OrderByDescending(a => a.QueueCount),
+                "errors" => q.OrderByDescending(a => a.FailuresLast24h.Count),
+                _ => q.OrderByDescending(a => a.LastActivityAt ?? DateTime.MinValue)
+            };
+            return q.ToList();
+        }
+    }
+
+    AgentCard? Selected => Filtered.FirstOrDefault(a => a.AgentId == _selectedId)
+        ?? Filtered.FirstOrDefault();
+
+    public void Dispose() => _timer?.Dispose();
+
+    static string RelativeTime(DateTime utc)
+    {
+        var delta = DateTime.UtcNow - utc;
+        if (delta.TotalMinutes < 1) return "just now";
+        if (delta.TotalHours < 1) return $"{(int)delta.TotalMinutes}m ago";
+        if (delta.TotalDays < 1) return $"{(int)delta.TotalHours}h ago";
+        return $"{(int)delta.TotalDays}d ago";
+    }
+}

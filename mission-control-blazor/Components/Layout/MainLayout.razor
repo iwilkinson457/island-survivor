@@ -1,0 +1,27 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <header class="topbar">
+        <div class="brand-block">
+            <div class="brand-mark">OC</div>
+            <div>
+                <p class="eyebrow">OpenClaw</p>
+                <h1>Mission Control</h1>
+            </div>
+        </div>
+
+        <nav class="topnav">
+            <NavLink href="/" Match="NavLinkMatch.All">Token Usage</NavLink>
+            <NavLink href="/agents">Agents</NavLink>
+        </nav>
+
+        <div class="topbar-status">
+            <span class="live-pill"><span class="live-dot"></span> Live telemetry</span>
+            <p class="muted compact">Blazor Server · .NET 9</p>
+        </div>
+    </header>
+
+    <main class="app-content">
+        @Body
+    </main>
+</div>

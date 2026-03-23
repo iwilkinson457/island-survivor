@@ -1,0 +1,38 @@
+<div class="panel sources-panel">
+    <div class="section-head">
+        <div>
+            <p class="eyebrow">Traceability</p>
+            <h3>Data sources</h3>
+        </div>
+        <button type="button" class="ghost-btn" @onclick="Toggle">
+            @(Expanded ? "Hide sources" : $"Show sources ({Sources?.Count ?? 0})")
+        </button>
+    </div>
+
+    @if (Expanded)
+    {
+        <div class="source-grid">
+            @foreach (var src in Sources ?? [])
+            {
+                <div class="source-card">
+                    <div class="source-head">
+                        <strong>@src.Name</strong>
+                        <span class="badge @(src.Live ? "badge-success" : "badge-offline")">@(src.Live ? "live" : "missing")</span>
+                    </div>
+                    <p class="muted">@src.Purpose</p>
+                    <code>@src.Path</code>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="muted">Source details collapsed by default. Expand to trace where a metric comes from.</p>
+    }
+</div>
+
+@code {
+    [Parameter] public List<DataSource>? Sources { get; set; }
+    bool Expanded;
+    void Toggle() => Expanded = !Expanded;
+}

@@ -1,0 +1,44 @@
+<div class="panel-subsection">
+    <h4>@Title</h4>
+    @if (!Tasks.Any())
+    {
+        <p class="muted">@Empty</p>
+    }
+    else
+    {
+        <div class="task-list">
+            @foreach (var task in Tasks)
+            {
+                <div class="task-row">
+                    <div class="task-row-head">
+                        <strong>@task.Title</strong>
+                        <StatusBadge Status="@task.Status" />
+                    </div>
+                    <div class="task-row-meta">
+                        <span>@(task.Provider ?? "provider ?")</span>
+                        <span>@(task.Model ?? "model ?")</span>
+                        <span>@(task.StartedAt.HasValue ? task.StartedAt.Value.ToLocalTime().ToString("g") : "No start")</span>
+                        @if (task.DurationMs.HasValue)
+                        {
+                            <span>@((int)(task.DurationMs.Value / 1000))s</span>
+                        }
+                    </div>
+                    @if (task.TokensIn.HasValue || task.TokensOut.HasValue)
+                    {
+                        <p class="muted compact">@(task.TokensIn ?? 0) in / @(task.TokensOut ?? 0) out</p>
+                    }
+                    @if (!string.IsNullOrEmpty(task.FailureReason))
+                    {
+                        <p class="error-text compact">@task.FailureReason</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public List<AgentTask> Tasks { get; set; } = [];
+    [Parameter] public string Empty { get; set; } = "No items.";
+}

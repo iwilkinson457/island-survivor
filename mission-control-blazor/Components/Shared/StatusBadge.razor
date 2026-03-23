@@ -1,0 +1,26 @@
+@{
+    var css = StatusClass(Status);
+}
+@if (DotOnly)
+{
+    <span class="status-dot @css" title="@Status" aria-label="@Status"></span>
+}
+else
+{
+    <span class="badge @css">@Status</span>
+}
+
+@code {
+    [Parameter] public string Status { get; set; } = "unknown";
+    [Parameter] public bool DotOnly { get; set; } = false;
+
+    static string StatusClass(string s) => s.ToLower() switch
+    {
+        "success" or "idle" or "completed" or "successful" => "badge-success",
+        "busy" or "current" or "running" => "badge-busy",
+        "error" or "failed" => "badge-error",
+        "rate-limited" or "rate_limited" => "badge-ratelimited",
+        "offline" => "badge-offline",
+        _ => "badge-unknown"
+    };
+}

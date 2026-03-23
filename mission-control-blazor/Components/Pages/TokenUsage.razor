@@ -1,0 +1,289 @@
+@page "/"
+@rendermode InteractiveServer
+@inject OpenClawDataService DataService
+
+<PageTitle>Token Usage · Mission Control</PageTitle>
+
+@if (_data is null)
+{
+    <div class="panel state-panel"><div class="state-stack"><span class="live-dot"></span><strong>Loading token telemetry…</strong></div></div>
+}
+else
+{
+    <div class="page-grid">
+        @* ── Header ── *@
+        <section class="page-header panel">
+            <div>
+                <p class="eyebrow">Token telemetry</p>
+                <h2>Provider, model, and agent usage</h2>
+                <p class="muted">Live from OpenClaw session data. Refreshes every @(_data.RefreshMs / 1000)s.</p>
+            </div>
+            <div class="header-actions">
+                <div class="segmented-control">
+                    @foreach (var r in new[] { (TimeRange.H24, "24h"), (TimeRange.D7, "7d"), (TimeRange.D30, "30d") })
+                    {
+                        <button type="button" class="@(_range == r.Item1 ? "active" : "")" @onclick="() => SetRange(r.Item1)">@r.Item2</button>
+                    }
+                </div>
+                <div class="refresh-note">
+                    <span class="live-pill"><span class="live-dot"></span> Live</span>
+                    <span class="muted compact">@RelativeTime(_data.GeneratedAt)</span>
+                </div>
+            </div>
+        </section>
+
+        @* ── Stats strip ── *@
+        <section class="stats-strip panel">
+            @foreach (var card in _data.SummaryCards)
+            {
+                <div class="stat-cell">
+                    <span class="stat-label">@card.Label</span>
+                    <strong class="stat-value">@card.Value</strong>
+                    @if (card.HelpText is not null)
+                    {
+                        <span class="muted compact">@card.HelpText</span>
+                    }
+                </div>
+            }
+        </section>
+
+        @* ── Filter toolbar ── *@
+        <section class="filter-toolbar panel">
+            <div class="filter-group">
+                <label>Agent</label>
+                <select @bind="_filterAgent">
+                    <option value="">All agents</option>
+                    @foreach (var a in _data.FilterOptions.Agents)
+                    {
+                        <option value="@a">@a</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Provider</label>
+                <select @bind="_filterProvider">
+                    <option value="">All providers</option>
+                    @foreach (var p in _data.FilterOptions.Providers)
+                    {
+                        <option value="@p">@p</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Model</label>
+                <select @bind="_filterModel">
+                    <option value="">All models</option>
+                    @foreach (var m in _data.FilterOptions.Models)
+                    {
+                        <option value="@m">@m</option>
+                    }
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Outcome</label>
+                <select @bind="_filterStatus">
+                    <option value="">All outcomes</option>
+                    @foreach (var s in _data.FilterOptions.Statuses)
+                    {
+                        <option value="@s">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="toolbar-summary">
+                <span class="muted">Filtered requests</span>
+                <strong>@FilteredRecords.Count.ToString("N0")</strong>
+            </div>
+        </section>
+
+        @* ── Chart + breakdown ── *@
+        <section class="dashboard-grid dashboard-grid-token">
+            <article class="panel panel-emphasis">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Volume</p>
+                        <h3>Token volume by interval</h3>
+                    </div>
+                    <span class="muted compact">Stacked by model</span>
+                </div>
+                <BarChart Buckets="FilteredBuckets" />
+            </article>
+
+            <article class="panel side-panel">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Breakdown</p>
+                        <h3>Model usage detail</h3>
+                    </div>
+                    <span class="muted compact">@FilteredBreakdown.Count rows</span>
+                </div>
+                <div class="table-wrap compact-table-wrap">
+                    <table class="table data-table">
+                        <thead>
+                            <tr>
+                                <th>Model</th><th>Prov</th><th>Req</th><th>Input</th><th>Output</th><th>Tok/s</th><th>Err</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in FilteredBreakdown)
+                            {
+                                <tr>
+                                    <td>@row.Model</td>
+                                    <td>@row.Provider</td>
+                                    <td>@row.Requests</td>
+                                    <td>@row.InputTokens.ToString("N0")</td>
+                                    <td>@row.OutputTokens.ToString("N0")</td>
+                                    <td>@(row.AvgTokensPerSecond.HasValue ? row.AvgTokensPerSecond.Value.ToString("N1") : "—")</td>
+                                    <td>@row.ErrorCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+
+        @* ── Totals + Windows ── *@
+        <section class="dashboard-grid dashboard-grid-secondary">
+            <article class="panel">
+                <div class="section-head">
+                    <div><p class="eyebrow">Filtered slice</p><h3>Totals for current filters</h3></div>
+                </div>
+                <div class="metric-stack">
+                    <div class="metric-row-line"><span class="muted">Input tokens</span><strong>@FilteredRecords.Sum(r => r.InputTokens).ToString("N0")</strong></div>
+                    <div class="metric-row-line"><span class="muted">Output tokens</span><strong>@FilteredRecords.Sum(r => r.OutputTokens).ToString("N0")</strong></div>
+                    <div class="metric-row-line"><span class="muted">Total tokens</span><strong>@FilteredRecords.Sum(r => r.TotalTokens).ToString("N0")</strong></div>
+                    <div class="metric-row-line"><span class="muted">Cache read</span><strong>@FilteredRecords.Sum(r => r.CacheReadTokens).ToString("N0")</strong></div>
+                    <div class="metric-row-line"><span class="muted">Unique models</span><strong>@FilteredRecords.Select(r => r.Model).Distinct().Count()</strong></div>
+                </div>
+            </article>
+
+            <article class="panel">
+                <div class="section-head">
+                    <div><p class="eyebrow">Tracked windows</p><h3>Usage windows</h3></div>
+                </div>
+                <div class="window-stack">
+                    @foreach (var w in _data.Windows)
+                    {
+                        <div class="window-card">
+                            <strong>@w.Window</strong>
+                            <h4>@w.TrackedTokens.ToString("N0") tokens</h4>
+                            <p class="muted">@w.TrackedRequests requests</p>
+                            <p class="muted compact">@w.Note</p>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <article class="panel notes-panel">
+                <div class="section-head">
+                    <div><p class="eyebrow">Interpretation</p><h3>Notes</h3></div>
+                </div>
+                <ul class="notes-list">
+                    @foreach (var note in _data.Notes)
+                    {
+                        <li>@note</li>
+                    }
+                </ul>
+            </article>
+        </section>
+
+        @* ── Request log ── *@
+        <section class="panel">
+            <div class="section-head">
+                <div><p class="eyebrow">Recent activity</p><h3>Request log</h3></div>
+                <span class="muted compact">Showing @Math.Min(FilteredRecords.Count, 30) of @FilteredRecords.Count</span>
+            </div>
+            <div class="table-wrap">
+                <table class="table data-table dense-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th><th>Agent</th><th>Provider / model</th><th>Input</th><th>Output</th><th>Latency</th><th>Started</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rec in FilteredRecords.Take(30))
+                        {
+                            <tr>
+                                <td><StatusBadge Status="@rec.Status.ToString().ToLower()" DotOnly="true" /></td>
+                                <td>@rec.AgentId</td>
+                                <td>
+                                    <div class="table-primary">@rec.Provider</div>
+                                    <div class="table-secondary">@rec.Model</div>
+                                </td>
+                                <td>@rec.InputTokens.ToString("N0")</td>
+                                <td>@rec.OutputTokens.ToString("N0")</td>
+                                <td>@(rec.LatencyMs.HasValue ? $"{rec.LatencyMs.Value:N0} ms" : "—")</td>
+                                <td>
+                                    <div class="table-primary">@RelativeTime(rec.StartedAt)</div>
+                                    <div class="table-secondary">@rec.StartedAt.ToLocalTime().ToString("g")</div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <SourceList Sources="_data.DataSources" />
+    </div>
+}
+
+@code {
+    TokenUsageData? _data;
+    TimeRange _range = TimeRange.H24;
+    string _filterAgent = "";
+    string _filterProvider = "";
+    string _filterModel = "";
+    string _filterStatus = "";
+    System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        _data = DataService.GetTokenUsage(_range);
+        _timer = new System.Threading.Timer(_ =>
+        {
+            _data = DataService.GetTokenUsage(_range);
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    void SetRange(TimeRange r)
+    {
+        _range = r;
+        _data = DataService.GetTokenUsage(_range);
+    }
+
+    List<TokenUsageRecord> FilteredRecords => (_data?.Records ?? [])
+        .Where(r =>
+            (string.IsNullOrEmpty(_filterAgent) || r.AgentId == _filterAgent) &&
+            (string.IsNullOrEmpty(_filterProvider) || r.Provider == _filterProvider) &&
+            (string.IsNullOrEmpty(_filterModel) || r.Model == _filterModel) &&
+            (string.IsNullOrEmpty(_filterStatus) || r.Status.ToString().ToLower() == _filterStatus))
+        .ToList();
+
+    List<TokenBucket> FilteredBuckets => _data is null ? [] : _data.Buckets
+        .Select(b =>
+        {
+            if (string.IsNullOrEmpty(_filterModel)) return b;
+            var filtered = b.TotalsByModel.Where(kv => kv.Key == _filterModel).ToDictionary(kv => kv.Key, kv => kv.Value);
+            return b with { TotalsByModel = filtered };
+        })
+        .ToList();
+
+    List<ModelBreakdownRow> FilteredBreakdown => (_data?.Breakdown ?? [])
+        .Where(r =>
+            (string.IsNullOrEmpty(_filterProvider) || r.Provider == _filterProvider) &&
+            (string.IsNullOrEmpty(_filterModel) || r.Model == _filterModel))
+        .ToList();
+
+    public void Dispose() => _timer?.Dispose();
+
+    static string RelativeTime(DateTime utc)
+    {
+        var delta = DateTime.UtcNow - utc;
+        if (delta.TotalMinutes < 1) return "just now";
+        if (delta.TotalHours < 1) return $"{(int)delta.TotalMinutes}m ago";
+        if (delta.TotalDays < 1) return $"{(int)delta.TotalHours}h ago";
+        return $"{(int)delta.TotalDays}d ago";
+    }
+}

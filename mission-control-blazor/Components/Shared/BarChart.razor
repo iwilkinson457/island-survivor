@@ -1,0 +1,97 @@
+@* SVG bar chart — built as MarkupString to avoid Razor's <text> tag conflict *@
+
+@if (Buckets is null || Buckets.Count == 0)
+{
+    <p class="muted">No chart data for this range.</p>
+}
+else
+{
+    @((MarkupString)RenderSvg(Buckets))
+}
+
+@code {
+    [Parameter] public List<TokenBucket>? Buckets { get; set; }
+
+    static readonly string[] Palette = ["#53b3ff", "#6f86ff", "#2dd4bf", "#f59e0b", "#f472b6", "#34d399"];
+
+    static string RenderSvg(List<TokenBucket> buckets)
+    {
+        const int PadL = 54, PadR = 12, PadT = 12, PadB = 50;
+        const int W = 700, H = 300;
+        const int ChartW = W - PadL - PadR;
+        const int ChartH = H - PadT - PadB;
+
+        var models = buckets
+            .SelectMany(b => b.TotalsByModel.Keys)
+            .Distinct()
+            .OrderBy(m => m)
+            .ToList();
+
+        var maxVal = buckets.Max(b => b.TotalsByModel.Values.DefaultIfEmpty(0).Sum());
+        if (maxVal <= 0) maxVal = 1;
+
+        var barSlot = ChartW / buckets.Count;
+        var sb = new System.Text.StringBuilder();
+
+        sb.Append($"""<svg viewBox="0 0 {W} {H}" class="bar-chart-svg" role="img" aria-label="Token volume by interval">""");
+
+        // Y-axis grid + labels
+        foreach (var frac in new[] { 0.0, 0.25, 0.5, 0.75, 1.0 })
+        {
+            var tick = (long)(maxVal * frac);
+            var yPx = (int)(PadT + ChartH - frac * ChartH);
+            sb.Append($"""<line x1="{PadL}" y1="{yPx}" x2="{PadL + ChartW}" y2="{yPx}" stroke="#1f3148" stroke-width="1"/>""");
+            sb.Append($"""<text x="{PadL - 6}" y="{yPx + 4}" text-anchor="end" class="chart-label">{Esc(FormatK(tick))}</text>""");
+        }
+
+        // Bars
+        var labelEvery = Math.Max(1, buckets.Count / 8);
+        for (var i = 0; i < buckets.Count; i++)
+        {
+            var b = buckets[i];
+            var x0 = PadL + i * barSlot + 2;
+            var bw = barSlot - 4;
+            double yBase = PadT + ChartH;
+            double stackH = 0;
+
+            for (var mi = 0; mi < models.Count; mi++)
+            {
+                b.TotalsByModel.TryGetValue(models[mi], out var tokens);
+                if (tokens <= 0) continue;
+                var segH = (double)tokens / maxVal * ChartH;
+                var yPos = yBase - stackH - segH;
+                var color = Palette[mi % Palette.Length];
+                var tip = Esc($"{models[mi]}: {tokens:N0} tokens");
+                sb.Append($"""<rect x="{x0}" y="{yPos:F1}" width="{bw}" height="{segH:F1}" fill="{color}" rx="2"><title>{tip}</title></rect>""");
+                stackH += segH;
+            }
+
+            if (i % labelEvery == 0 || i == buckets.Count - 1)
+            {
+                var lx = x0 + bw / 2.0;
+                sb.Append($"""<text x="{lx:F0}" y="{PadT + ChartH + 17}" text-anchor="middle" class="chart-label">{Esc(b.Label)}</text>""");
+            }
+        }
+
+        // Legend
+        for (var mi = 0; mi < Math.Min(models.Count, 6); mi++)
+        {
+            var lx = PadL + mi * 115;
+            var ly = H - 12;
+            sb.Append($"""<rect x="{lx}" y="{ly}" width="10" height="10" fill="{Palette[mi % Palette.Length]}" rx="2"/>""");
+            sb.Append($"""<text x="{lx + 14}" y="{ly + 9}" class="chart-label">{Esc(Trunc(models[mi], 16))}</text>""");
+        }
+
+        sb.Append("</svg>");
+        return sb.ToString();
+    }
+
+    static string FormatK(long v) =>
+        v >= 1_000_000 ? $"{v / 1_000_000.0:N1}M" :
+        v >= 1_000     ? $"{v / 1_000.0:N0}k" :
+        v.ToString();
+
+    static string Trunc(string s, int max) => s.Length > max ? s[..max] + "…" : s;
+
+    static string Esc(string s) => System.Security.SecurityElement.Escape(s) ?? s;
+}

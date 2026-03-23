@@ -1,0 +1,7 @@
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\MissionControl.exe
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\appsettings.Development.json
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\appsettings.json
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\MissionControl.dll
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\MissionControl.deps.json
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\MissionControl.runtimeconfig.json
+C:\Users\Ian\.openclaw\workspace\mission-control-blazor\bin\Release\net9.0\publish\MissionControl.pdb
