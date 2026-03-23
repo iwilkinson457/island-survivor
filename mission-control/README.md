@@ -1,23 +1,24 @@
 # Mission Control
 
-Mission Control is a modular dark-theme dashboard for OpenClaw operational visibility.
+Mission Control is a dark-theme operations dashboard for OpenClaw telemetry.
 
-## What it includes
-- **Token Usage** page
-  - summary cards
-  - time range toggle (24h / 7d / 30d)
-  - filters for agent/provider/model/status
-  - token volume chart by model
-  - inferred tokens/sec chart
-  - model breakdown table
-  - tracked 5-hour and 7-day usage windows
-  - recent request records
-- **Agents** page
-  - kanban-style columns per agent
-  - outstanding/current/completed sections
-  - status badges
-  - filters and sort controls
-  - detail drawer with recent runs, failures, model config, and token summary
+This version keeps the same underlying real data work intact, but redesigns the client into a denser control-room UI with clearer information hierarchy and better use of screen space.
+
+## UX structure
+- **Top navigation shell** instead of a fixed sidebar
+- **Token Usage** redesigned as an ops console:
+  - compact page header with range control and live status
+  - horizontal stats strip for core telemetry
+  - cohesive filter toolbar
+  - large token volume chart beside a persistent model breakdown table
+  - secondary performance / totals / tracked windows row
+  - dense recent request log table
+  - collapsible data-source traceability section
+- **Agents** redesigned as a roster + detail view:
+  - filterable agent roster on the left
+  - selected-agent detail panel on the right
+  - current/completed/failure task sections
+  - notes and collapsible source traceability section
 
 ## Real data sources discovered on this machine
 1. `C:\Users\Ian\.openclaw\openclaw.json`
