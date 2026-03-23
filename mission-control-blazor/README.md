@@ -29,6 +29,13 @@ Mission Control (Blazor) is a dark-theme operations dashboard for OpenClaw, rebu
 - inferred status presentation
 - notes and source traceability
 
+### Work Log
+- day-by-day history view from durable markdown files
+- browse daily summaries newest-first
+- structured reading view for headings, notes, and bullet points
+- raw source panel for exact file content
+- intended for Clare + Wilko project history
+
 ## Real data sources used
 1. `C:\Users\Ian\.openclaw\openclaw.json`
    - configured agents
@@ -43,6 +50,9 @@ Mission Control (Blazor) is a dark-theme operations dashboard for OpenClaw, rebu
    - stop reasons
 4. `C:\Users\Ian\.openclaw\subagents\runs.json`
    - subagent task/run metadata
+5. `C:\Users\Ian\.openclaw\workspace\memory\YYYY-MM-DD.md`
+   - durable daily work logs / memory summaries
+   - day-by-day history for Clare and Wilko
 
 ## Live vs inferred vs unavailable
 ### Live
@@ -85,6 +95,6 @@ dotnet publish -c Release
 - `Models/` - dashboard records / DTOs
 - `Services/` - OpenClaw file reader and aggregation logic
 - `Components/Layout/` - app shell
-- `Components/Pages/` - Token Usage and Agents pages
+- `Components/Pages/` - Token Usage, Agents, and Work Log pages
 - `Components/Shared/` - badges, chart, task blocks, source list
 - `wwwroot/app.css` - dark ops-console styling

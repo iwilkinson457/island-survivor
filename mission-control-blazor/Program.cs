@@ -4,6 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 builder.Services.AddSingleton<OpenClawDataService>();
+builder.Services.AddSingleton<WorkLogService>();
 
 var app = builder.Build();
 

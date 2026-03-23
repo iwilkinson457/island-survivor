@@ -504,6 +504,143 @@ code {
     .detail-metrics { grid-template-columns: 1fr 1fr; }
 }
 
+/* ── Work log ───────────────────────────────────────────────────────────── */
+
+.worklog-layout {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.worklog-sidebar {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.worklog-sidebar-header,
+.worklog-detail-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: end;
+}
+
+.worklog-day-list {
+    display: grid;
+    gap: .75rem;
+}
+
+.worklog-day {
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+    border-radius: var(--radius-sm);
+    padding: .95rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+    transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.worklog-day:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+}
+
+.worklog-day.active {
+    border-color: rgba(83,179,255,.7);
+    box-shadow: inset 0 0 0 1px rgba(83,179,255,.28), 0 0 0 1px rgba(83,179,255,.08);
+    background: linear-gradient(180deg, rgba(83,179,255,.10), rgba(83,179,255,.03));
+}
+
+.worklog-day span,
+.worklog-day-meta {
+    display: block;
+}
+
+.worklog-detail {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.detail-tags {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.badge-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-strong);
+    color: #c5ddf8;
+    background: rgba(83,179,255,.08);
+    border-radius: 999px;
+    padding: .35rem .7rem;
+    font-size: .78rem;
+}
+
+.worklog-sections {
+    display: grid;
+    gap: 1rem;
+}
+
+.worklog-section {
+    display: grid;
+    gap: .8rem;
+}
+
+.section-heading-row {
+    display: grid;
+    gap: .15rem;
+}
+
+.section-heading-row h4 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.worklog-paragraph {
+    margin: 0;
+    color: #d7e4f5;
+    line-height: 1.65;
+}
+
+.worklog-bullets {
+    margin: 0;
+    padding-left: 1.15rem;
+    display: grid;
+    gap: .55rem;
+    color: #d7e4f5;
+}
+
+.worklog-bullets li {
+    line-height: 1.6;
+}
+
+.worklog-raw {
+    margin: 0;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-family: var(--mono);
+    font-size: .82rem;
+    color: #cfe1f7;
+}
+
+.subtle-panel {
+    background: rgba(255,255,255,.02);
+}
+
+@media (max-width: 980px) {
+    .worklog-layout { grid-template-columns: 1fr; }
+    .worklog-sidebar-header,
+    .worklog-detail-header { align-items: start; flex-direction: column; }
+}
+
 @media (max-width: 640px) {
     .app-content, .topbar { padding: 1rem; }
     .panel { padding: .95rem; }
@@ -512,4 +649,5 @@ code {
     .filter-group, .filter-search { min-width: 100%; }
     .toolbar-summary { margin-left: 0; }
     .agent-row-stats, .detail-metrics { grid-template-columns: 1fr; }
+    .worklog-day { align-items: start; flex-direction: column; }
 }
