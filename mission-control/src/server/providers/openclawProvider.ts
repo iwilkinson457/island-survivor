@@ -241,8 +241,9 @@ export function buildTokenUsage(range: TimeRange) {
   const start = range === '24h' ? hoursAgo(24) : range === '7d' ? daysAgo(7) : daysAgo(30);
   const relevant = data.records.filter((record) => new Date(record.startedAt) >= start);
   const trackedProviders = [...new Set(relevant.map((item) => item.provider))].sort();
+  const configuredAgentIds = safeArray<any>(data.config?.agents?.list).map((a: any) => a.id as string);
   const filters = {
-    agents: [...new Set(relevant.map((item) => item.agentId))].sort(),
+    agents: [...new Set([...relevant.map((item) => item.agentId), ...configuredAgentIds])].sort(),
     providers: [...new Set([...trackedProviders, ...data.configuredProviders])].sort(),
     models: [...new Set(relevant.map((item) => item.model))].sort(),
     statuses: [...new Set(relevant.map((item) => item.status))].sort() as RunStatus[]
