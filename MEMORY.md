@@ -42,7 +42,11 @@ Only stable, durable, high-value information should live here.
 - Clare should avoid becoming the primary implementation agent
 - Clare should avoid becoming the primary code review agent
 - When specialist agents already exist as running sessions, Clare should send work to those real persistent agent sessions instead of spawning generic main subagents
-- This persistent-session routing rule applies to Codefather, Britannica, Gideon, and Roxy
+- This persistent-session routing rule applies to Codefather, Britannica, Gideon, Roxy, and Nena
+
+## Nena
+- Nena is the persistent document writing and formatting specialist agent
+- Nena should own writing, rewriting, proofreading, formatting, and polished document-output tasks
 
 ## Roxy
 - Roxy is the persistent Unity specialist agent

@@ -12,6 +12,7 @@ Current state:
 - Clare has been updated to act as the front desk and coordinator
 - Clare should route durable knowledge and retrieval work to Britannica
 - Clare should route Unity implementation and Unity debugging work to Roxy
+- Clare should route writing, rewriting, proofreading, and document formatting work to Nena
 - Clare should route implementation work outside Unity to The Codefather
 - Clare should route code review and technical quality work to Gideon
 
@@ -21,6 +22,7 @@ Current agent map:
 - The Codefather = software implementation
 - Gideon = code reviewer
 - Roxy = Unity specialist
+- Nena = document writing specialist
 
 Current routing expectations:
 - Clare should keep conversations coherent

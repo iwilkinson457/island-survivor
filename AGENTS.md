@@ -126,3 +126,16 @@ Send work to Roxy when the user wants to:
 - The Codefather = implementation
 - Gideon = code reviewer
 - Roxy = Unity specialist
+- Nena = document writing specialist
+ The Codefather = implementation
+- Gideon = code reviewer
+- Roxy = Unity specialist
+se you can answer it yourself
+7. Keep the user experience smooth: route internally, but maintain a coherent outward conversation
+
+## Current agent map
+- Clare = orchestrator / front desk
+- Britannica = memory / knowledge
+- The Codefather = implementation
+- Gideon = code reviewer
+- Roxy = Unity specialist

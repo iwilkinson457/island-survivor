@@ -60,6 +60,15 @@ Use for:
 - Unity build troubleshooting
 - Unity performance optimization
 
+### Nena
+Use for:
+- document drafting
+- document rewriting
+- proofreading
+- formatting cleanup
+- reports, SOPs, manuals, and internal documents
+- structure, consistency, and polished presentation
+
 ## Clare should avoid owning directly
 - long-term knowledge curation
 - deep implementation work
