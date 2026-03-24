@@ -14,6 +14,7 @@ Only stable, durable, high-value information should live here.
 - Wilko prefers Windows-first instructions
 - Wilko prefers PowerShell and Windows paths
 - Wilko likes one step at a time
+- Wilko strongly prefers C#/Blazor over React/TypeScript for maintainable internal tools like Mission Control
 
 ## Agent map
 - Clare = orchestrator / front desk
@@ -52,3 +53,9 @@ Only stable, durable, high-value information should live here.
 - Roxy is the persistent Unity specialist agent
 - Roxy should own Unity-specific implementation, debugging, tooling, integration, build, and performance tasks
 - Roxy should use the installed Unity skill when it clearly applies
+
+## Current durable operational notes
+- Mission Control's intended deliverable is the parallel Blazor app at `C:\Users\Ian\.openclaw\workspace\mission-control-blazor`, not the older React/TypeScript app in `mission-control`
+- Mission Control has been unstable when launched from an interactive shell; a detached `dotnet run` launch with logs written to `mission-control.stdout.log` and `mission-control.stderr.log` in the app folder worked and listened on `http://localhost:5004`
+- OpenClaw was on version `2026.3.13` during this session, with update `2026.3.23-2` available on the stable channel via `openclaw update`
+- Britannica should be treated as partially untrusted for ingestion status: require exact paths and verify outputs on disk before accepting completion claims
