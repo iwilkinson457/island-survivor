@@ -11,6 +11,7 @@ Only stable, durable, high-value information should live here.
 ## User
 - Primary user: Wilko
 - Formal name: Ian Wilkinson
+- Email: iwilkinson@testtech.com.au
 - Wilko prefers Windows-first instructions
 - Wilko prefers PowerShell and Windows paths
 - Wilko likes one step at a time

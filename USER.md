@@ -5,6 +5,9 @@ Primary user: Wilko
 Formal name:
 - Ian Wilkinson
 
+Email:
+- iwilkinson@testtech.com.au
+
 Preferences:
 - Windows-first
 - Prefer PowerShell and Windows paths
