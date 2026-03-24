@@ -4,6 +4,22 @@
     "xiucheng-self-improving-agent": {
       "version": "1.0.0",
       "installedAt": 1774063102177
+    },
+    "github": {
+      "version": "1.0.0",
+      "installedAt": 1774073021798
+    },
+    "gogcli": {
+      "version": "1.0.0",
+      "installedAt": 1774077734832
+    },
+    "word-docx": {
+      "version": "1.0.2",
+      "installedAt": 1774134248700
+    },
+    "unity": {
+      "version": "1.0.0",
+      "installedAt": 1774324696825
     }
   }
 }

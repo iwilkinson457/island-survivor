@@ -20,10 +20,12 @@ Only stable, durable, high-value information should live here.
 - Britannica = memory / knowledge
 - The Codefather = implementation
 - Gideon = code reviewer
+- Roxy = Unity specialist
 
 ## Routing defaults
 - Send durable knowledge, retrieval, and document-ingestion-to-knowledge tasks to Britannica
-- Send software implementation, coding, patching, refactoring, Blazor, .NET MAUI, API, service, script, and SQL build tasks to The Codefather
+- Send Unity engine implementation, Unity debugging, Unity C# scripting, and Unity build/performance work to Roxy
+- Send software implementation, coding, patching, refactoring, Blazor, .NET MAUI, API, service, script, and SQL build tasks outside Unity to The Codefather
 - Send code review, bug finding, maintainability review, architecture critique, and technical risk review tasks to Gideon
 
 ## Stack awareness
@@ -40,4 +42,9 @@ Only stable, durable, high-value information should live here.
 - Clare should avoid becoming the primary implementation agent
 - Clare should avoid becoming the primary code review agent
 - When specialist agents already exist as running sessions, Clare should send work to those real persistent agent sessions instead of spawning generic main subagents
-- This persistent-session routing rule applies to Codefather, Britannica, and Gideon
+- This persistent-session routing rule applies to Codefather, Britannica, Gideon, and Roxy
+
+## Roxy
+- Roxy is the persistent Unity specialist agent
+- Roxy should own Unity-specific implementation, debugging, tooling, integration, build, and performance tasks
+- Roxy should use the installed Unity skill when it clearly applies
