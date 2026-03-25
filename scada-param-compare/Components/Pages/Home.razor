@@ -1,0 +1,321 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>SCADA Parameter Compare</PageTitle>
+
+<div class="page-grid">
+
+    @* ── Intro / instructions ── *@
+    <section class="panel intro-panel">
+        <div>
+            <p class="eyebrow">How to use</p>
+            <h2>Compare two parameter sets</h2>
+            <p class="muted">Paste parameter data from Excel into the two boxes below. The tool will show what was Added, Removed, or Changed — plus any OPC tag name issues. Use this before preparing a PMCR.</p>
+        </div>
+        <div class="format-hint panel subtle-panel">
+            <strong class="label-sm">Accepted format (CSV or TSV, with or without header)</strong>
+            <pre><code>TagName,Value,Unit,Description
+SYS.CM1.DRIVE_RUN,1,bool,Conveyor 1 run command
+SYS.CM1.SPEED_SP,85.5,rpm,Conveyor 1 speed setpoint</code></pre>
+            <p class="muted compact">Tip: copy columns directly from Excel — TSV is auto-detected. Header row is optional.</p>
+        </div>
+    </section>
+
+    @* ── Input panes ── *@
+    <section class="input-row panel">
+        <div class="input-pane">
+            <label class="pane-label">
+                <span class="eyebrow">Baseline</span>
+                <strong>Original / Before</strong>
+            </label>
+            <textarea class="param-input"
+                      placeholder="Paste original parameters here…"
+                      @bind="_leftText"
+                      @bind:event="oninput"
+                      rows="14"
+                      spellcheck="false"></textarea>
+            @if (_leftWarnings.Count > 0)
+            {
+                <ul class="parse-warnings">
+                    @foreach (var w in _leftWarnings) { <li>⚠ @w</li> }
+                </ul>
+            }
+            <p class="muted compact">@(_leftRows.Count) row@(_leftRows.Count == 1 ? "" : "s") parsed</p>
+        </div>
+
+        <div class="input-pane">
+            <label class="pane-label">
+                <span class="eyebrow">Proposed</span>
+                <strong>Updated / After</strong>
+            </label>
+            <textarea class="param-input"
+                      placeholder="Paste updated parameters here…"
+                      @bind="_rightText"
+                      @bind:event="oninput"
+                      rows="14"
+                      spellcheck="false"></textarea>
+            @if (_rightWarnings.Count > 0)
+            {
+                <ul class="parse-warnings">
+                    @foreach (var w in _rightWarnings) { <li>⚠ @w</li> }
+                </ul>
+            }
+            <p class="muted compact">@(_rightRows.Count) row@(_rightRows.Count == 1 ? "" : "s") parsed</p>
+        </div>
+    </section>
+
+    @* ── Actions ── *@
+    <section class="action-row panel">
+        <div class="action-group">
+            <button class="btn-primary" @onclick="RunCompare" disabled="@(!CanCompare)">
+                Run Comparison
+            </button>
+            <button class="btn-ghost" @onclick="Clear">
+                Clear
+            </button>
+        </div>
+        <label class="toggle-label">
+            <input type="checkbox" @bind="_validateTags" />
+            <span>Validate OPC tag names</span>
+        </label>
+        @if (_result is not null)
+        {
+            <div class="result-summary @(_result.IsClean ? "clean" : "dirty")">
+                @if (_result.IsClean)
+                {
+                    <span class="badge-ok">✓ No differences found</span>
+                }
+                else
+                {
+                    <span>
+                        @if (_result.Added.Count   > 0) { <span class="badge-added">+@(_result.Added.Count) added</span> }
+                        @if (_result.Removed.Count > 0) { <span class="badge-removed">−@(_result.Removed.Count) removed</span> }
+                        @if (_result.Changed.Count > 0) { <span class="badge-changed">~@(_result.Changed.Count) changed</span> }
+                        @if (_result.TagIssues.Count > 0) { <span class="badge-warn">⚠ @(_result.TagIssues.Count) tag issue@(_result.TagIssues.Count == 1 ? "" : "s")</span> }
+                    </span>
+                }
+            </div>
+        }
+    </section>
+
+    @* ── Results ── *@
+    @if (_result is not null)
+    {
+        @* Added *@
+        @if (_result.Added.Count > 0)
+        {
+            <section class="panel result-section result-added">
+                <div class="result-section-header">
+                    <p class="eyebrow">Added</p>
+                    <h3>@(_result.Added.Count) new tag@(_result.Added.Count == 1 ? "" : "s") in proposed set</h3>
+                </div>
+                <table class="param-table">
+                    <thead>
+                        <tr><th>Tag Name</th><th>Value</th><th>Unit</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _result.Added)
+                        {
+                            <tr class="row-added">
+                                <td class="tag-cell">@row.TagName</td>
+                                <td>@row.NewValue</td>
+                                <td>@row.NewUnit</td>
+                                <td>@row.NewDescription</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+
+        @* Removed *@
+        @if (_result.Removed.Count > 0)
+        {
+            <section class="panel result-section result-removed">
+                <div class="result-section-header">
+                    <p class="eyebrow">Removed</p>
+                    <h3>@(_result.Removed.Count) tag@(_result.Removed.Count == 1 ? "" : "s") not present in proposed set</h3>
+                </div>
+                <table class="param-table">
+                    <thead>
+                        <tr><th>Tag Name</th><th>Value</th><th>Unit</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _result.Removed)
+                        {
+                            <tr class="row-removed">
+                                <td class="tag-cell">@row.TagName</td>
+                                <td>@row.OldValue</td>
+                                <td>@row.OldUnit</td>
+                                <td>@row.OldDescription</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+
+        @* Changed *@
+        @if (_result.Changed.Count > 0)
+        {
+            <section class="panel result-section result-changed">
+                <div class="result-section-header">
+                    <p class="eyebrow">Changed</p>
+                    <h3>@(_result.Changed.Count) tag@(_result.Changed.Count == 1 ? "" : "s") with modified values</h3>
+                </div>
+                <table class="param-table param-table-diff">
+                    <thead>
+                        <tr><th>Tag Name</th><th>Before → After</th><th>Unit Before → After</th><th>Description Before → After</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _result.Changed)
+                        {
+                            <tr class="row-changed">
+                                <td class="tag-cell">@row.TagName</td>
+                                <td>
+                                    @if (row.ValueChanged)
+                                    {
+                                        <span class="diff-before">@row.OldValue</span>
+                                        <span class="diff-arrow">→</span>
+                                        <span class="diff-after">@row.NewValue</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="unchanged-val">@row.NewValue</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (row.UnitChanged)
+                                    {
+                                        <span class="diff-before">@row.OldUnit</span>
+                                        <span class="diff-arrow">→</span>
+                                        <span class="diff-after">@row.NewUnit</span>
+                                    }
+                                    else { <span class="unchanged-val">@row.NewUnit</span> }
+                                </td>
+                                <td>
+                                    @if (row.DescChanged)
+                                    {
+                                        <span class="diff-before">@row.OldDescription</span>
+                                        <span class="diff-arrow">→</span>
+                                        <span class="diff-after">@row.NewDescription</span>
+                                    }
+                                    else { <span class="unchanged-val">@row.NewDescription</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+
+        @* Tag issues *@
+        @if (_result.TagIssues.Count > 0)
+        {
+            <section class="panel result-section result-warn">
+                <div class="result-section-header">
+                    <p class="eyebrow">OPC tag validation</p>
+                    <h3>@(_result.TagIssues.Count) tag name issue@(_result.TagIssues.Count == 1 ? "" : "s") in proposed set</h3>
+                </div>
+                <table class="param-table">
+                    <thead>
+                        <tr><th>Tag Name</th><th>Issue</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var issue in _result.TagIssues)
+                        {
+                            <tr class="row-warn">
+                                <td class="tag-cell">@issue.TagName</td>
+                                <td>@issue.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+
+        @* Unchanged (collapsed) *@
+        @if (_result.Unchanged.Count > 0)
+        {
+            <details class="panel subtle-panel">
+                <summary>
+                    <span>@(_result.Unchanged.Count) unchanged tag@(_result.Unchanged.Count == 1 ? "" : "s")</span>
+                    <span class="muted compact">Identical in both sets</span>
+                </summary>
+                <table class="param-table">
+                    <thead>
+                        <tr><th>Tag Name</th><th>Value</th><th>Unit</th><th>Description</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _result.Unchanged)
+                        {
+                            <tr>
+                                <td class="tag-cell muted">@row.TagName</td>
+                                <td class="muted">@row.NewValue</td>
+                                <td class="muted">@row.NewUnit</td>
+                                <td class="muted">@row.NewDescription</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </details>
+        }
+    }
+
+</div>
+
+@code {
+    private string _leftText  = "";
+    private string _rightText = "";
+    private bool   _validateTags = true;
+
+    private List<ParameterRow> _leftRows     = [];
+    private List<ParameterRow> _rightRows    = [];
+    private List<string>       _leftWarnings  = [];
+    private List<string>       _rightWarnings = [];
+
+    private CompareResult? _result;
+
+    private bool CanCompare => _leftRows.Count > 0 && _rightRows.Count > 0;
+
+    protected override void OnInitialized()
+    {
+        // pre-populate with a small demo so the UI isn't blank on first load
+        _leftText = "TagName\tValue\tUnit\tDescription\n" +
+                    "SYS.CM1.DRIVE_RUN\t1\tbool\tConveyor 1 run command\n" +
+                    "SYS.CM1.SPEED_SP\t75.0\trpm\tConveyor 1 speed setpoint\n" +
+                    "SYS.CM1.FAULT_RST\t0\tbool\tConveyor 1 fault reset\n" +
+                    "SYS.PMP1.PRES_SP\t45.5\tbar\tPump 1 pressure setpoint";
+
+        _rightText = "TagName\tValue\tUnit\tDescription\n" +
+                     "SYS.CM1.DRIVE_RUN\t1\tbool\tConveyor 1 run command\n" +
+                     "SYS.CM1.SPEED_SP\t85.5\trpm\tConveyor 1 speed setpoint\n" +
+                     "SYS.PMP1.PRES_SP\t45.5\tbar\tPump 1 pressure setpoint\n" +
+                     "SYS.PMP2.PRES_SP\t38.0\tbar\tPump 2 pressure setpoint";
+
+        ParseBoth();
+    }
+
+    private void ParseBoth()
+    {
+        (_leftRows,  _leftWarnings)  = ParameterParser.Parse(_leftText);
+        (_rightRows, _rightWarnings) = ParameterParser.Parse(_rightText);
+    }
+
+    private void RunCompare()
+    {
+        ParseBoth();
+        _result = ParameterParser.Compare(_leftRows, _rightRows, _validateTags);
+    }
+
+    private void Clear()
+    {
+        _leftText  = "";
+        _rightText = "";
+        _leftRows  = [];
+        _rightRows = [];
+        _leftWarnings  = [];
+        _rightWarnings = [];
+        _result = null;
+    }
+}
