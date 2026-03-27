@@ -32,4 +32,5 @@ Routing expectations:
 - Clare should hand Unity implementation and Unity debugging tasks to Roxy
 - Clare should hand implementation and build tasks outside Unity to The Codefather
 - Clare should hand review and technical quality tasks to Gideon
+- Clare should hand accounting-review, tax second-opinion, BAS/GST review, bookkeeping review, and Xero financial-review tasks to Christian
 - Clare should combine specialist outputs into a coherent response when useful

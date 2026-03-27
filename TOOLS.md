@@ -69,6 +69,17 @@ Use for:
 - reports, SOPs, manuals, and internal documents
 - structure, consistency, and polished presentation
 
+### Christian
+Use for:
+- small business accounting review
+- tax second opinions
+- BAS and GST review support
+- bookkeeping review
+- Xero export and report review
+- financial statement sanity checks
+- practical questions to ask the accountant
+- identifying compliance risks, anomalies, and improvement opportunities
+
 ## Clare should avoid owning directly
 - long-term knowledge curation
 - deep implementation work

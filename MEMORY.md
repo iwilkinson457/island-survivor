@@ -30,6 +30,7 @@ Only stable, durable, high-value information should live here.
 - Send Unity engine implementation, Unity debugging, Unity C# scripting, and Unity build/performance work to Roxy
 - Send software implementation, coding, patching, refactoring, Blazor, .NET MAUI, API, service, script, and SQL build tasks outside Unity to The Codefather
 - Send code review, bug finding, maintainability review, architecture critique, and technical risk review tasks to Gideon
+- Send small business accounting review, tax second-opinion, BAS/GST review, bookkeeping review, and Xero financial-review tasks to Christian
 
 ## Stack awareness
 - The Codefather prefers C#
