@@ -5,21 +5,22 @@
 
 .DESCRIPTION
     Routes a file to the appropriate Python wrapper, validates the result,
-    and writes a cleaned Markdown note to notes\cleaned\.
+    and writes a cleaned Markdown note to the Britannica cleaned notes folder.
 
 .PARAMETER File
     Path to the source file (DOCX, PDF, XLSX, XLSM, XLS, PPTX).
 
 .PARAMETER Out
-    Output directory. Defaults to notes\cleaned\ relative to this script.
+    Output directory for the cleaned note.
+    Defaults to: C:\Users\<you>\.openclaw\agents\britannica\workspace\notes\cleaned
 
 .PARAMETER DryRun
     Extract and validate but do not write output.
 
 .EXAMPLE
     .\ingest.ps1 "C:\Docs\SomeProcedure.docx"
-    .\ingest.ps1 "C:\Docs\Report.pdf" --Out "D:\Britannica\notes\cleaned"
-    .\ingest.ps1 "C:\Docs\Params.xlsx" --DryRun
+    .\ingest.ps1 "C:\Docs\Report.pdf" -Out "D:\Britannica\notes\cleaned"
+    .\ingest.ps1 "C:\Docs\Params.xlsx" -DryRun
 #>
 param(
     [Parameter(Mandatory=$true, Position=0)]
@@ -31,7 +32,7 @@ param(
 )
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$IngestPy = Join-Path $ScriptDir "ingest.py"
+$IngestPy  = Join-Path $ScriptDir "ingest.py"
 
 if (-not (Test-Path $IngestPy)) {
     Write-Error "ingest.py not found at $IngestPy"
@@ -43,25 +44,27 @@ if (-not (Test-Path $File)) {
     exit 2
 }
 
-$args_list = @($IngestPy, $File)
+$pyArgs = @($IngestPy, $File)
 
 if ($Out -ne "") {
-    $args_list += "--out"
-    $args_list += $Out
+    $pyArgs += "--out"
+    $pyArgs += $Out
 }
 
 if ($DryRun) {
-    $args_list += "--dry-run"
+    $pyArgs += "--dry-run"
 }
 
 Write-Host "[ingest] Dispatching: $File" -ForegroundColor Cyan
-python @args_list
+python @pyArgs
 $exitCode = $LASTEXITCODE
 
-switch ($exitCode) {
-    0 { Write-Host "[ingest] Done — grade A/B (trusted or usable)." -ForegroundColor Green }
-    1 { Write-Host "[ingest] Done — grade C/D (weak extraction). Review the note before use." -ForegroundColor Yellow }
-    2 { Write-Host "[ingest] Failed — unsupported type or hard error." -ForegroundColor Red }
+if ($exitCode -eq 0) {
+    Write-Host "[ingest] Done - grade A/B (trusted or usable)." -ForegroundColor Green
+} elseif ($exitCode -eq 1) {
+    Write-Host "[ingest] Done - grade C/D (weak). Review the note before use." -ForegroundColor Yellow
+} else {
+    Write-Host "[ingest] Failed - unsupported file type or hard error." -ForegroundColor Red
 }
 
 exit $exitCode

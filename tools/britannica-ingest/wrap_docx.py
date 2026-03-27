@@ -10,6 +10,20 @@ from pathlib import Path
 import re
 
 
+_STRUCTURAL_HEADING_NAMES = {
+    "summary", "table of contents", "contents", "introduction",
+    "overview", "abstract", "document control", "revision history",
+    "scope", "purpose", "references", "appendix",
+}
+
+_TOC_LINE_RE = re.compile(r"\t\d+\s*$|\s{3,}\d+\s*$")
+
+
+def _is_toc_line(text: str) -> bool:
+    """Returns True if a line looks like a table-of-contents entry."""
+    return bool(_TOC_LINE_RE.search(text))
+
+
 def extract(source: Path) -> dict:
     try:
         from docx import Document
@@ -21,16 +35,22 @@ def extract(source: Path) -> dict:
     except Exception as e:
         return {"error": f"Failed to open DOCX: {e}"}
 
+    # Try core properties for a clean title first
+    try:
+        core_title = (doc.core_properties.title or "").strip()
+    except Exception:
+        core_title = ""
+
     paragraphs_md = []
-    first_heading = None
-    body_text_parts = []
+    first_real_heading = None   # first heading that isn't a structural/TOC stub
+    body_text_parts = []        # all text (used for body_md)
+    prose_parts = []            # non-TOC, non-heading prose (used for summary)
     table_summaries = []
 
     for block in doc.element.body:
         tag = block.tag.split("}")[-1] if "}" in block.tag else block.tag
 
         if tag == "p":
-            # Find the matching paragraph object
             from docx.text.paragraph import Paragraph
             para = Paragraph(block, doc)
             style = para.style.name if para.style else ""
@@ -38,11 +58,16 @@ def extract(source: Path) -> dict:
             if not text:
                 continue
 
+            is_toc = _is_toc_line(text)
+
             if style.startswith("Heading 1") or style == "Title":
-                if not first_heading:
-                    first_heading = text
+                if (not first_real_heading
+                        and text.lower() not in _STRUCTURAL_HEADING_NAMES
+                        and not is_toc):
+                    first_real_heading = text
                 paragraphs_md.append(f"## {text}")
                 body_text_parts.append(text)
+                # Don't add headings to prose_parts — they're not summaries
             elif style.startswith("Heading 2"):
                 paragraphs_md.append(f"### {text}")
                 body_text_parts.append(text)
@@ -55,9 +80,13 @@ def extract(source: Path) -> dict:
             elif style in ("List Paragraph", "List Bullet", "List Number"):
                 paragraphs_md.append(f"- {text}")
                 body_text_parts.append(text)
+                if not is_toc and len(text) > 15:
+                    prose_parts.append(text)
             else:
                 paragraphs_md.append(text)
                 body_text_parts.append(text)
+                if not is_toc and len(text) > 15:
+                    prose_parts.append(text)
 
         elif tag == "tbl":
             from docx.table import Table
@@ -72,12 +101,10 @@ def extract(source: Path) -> dict:
                 md_rows = ["| " + " | ".join(header) + " |",
                            "| " + " | ".join(["---"] * len(header)) + " |"]
                 for row in rows[1:]:
-                    # Pad/trim to header length
                     row = (row + [""] * len(header))[:len(header)]
                     md_rows.append("| " + " | ".join(row) + " |")
                 tbl_md = "\n".join(md_rows)
                 paragraphs_md.append(tbl_md)
-                # Flatten table text for summary
                 for row in rows[1:]:
                     body_text_parts.extend([c for c in row if c])
                 table_summaries.append(f"Table with {len(rows)-1} data rows and columns: {', '.join(header[:6])}")
@@ -85,29 +112,32 @@ def extract(source: Path) -> dict:
     full_body = "\n\n".join(paragraphs_md)
     body_words = " ".join(body_text_parts)
 
-    # Build summary: first ~300 chars of non-heading body text
-    summary_parts = [p for p in body_text_parts if len(p) > 20 and not p.startswith("#")]
-    summary = " ".join(summary_parts[:4])[:500].strip()
-    if not summary and body_words:
+    # Summary: first 400 chars of real prose (no TOC lines, no headings)
+    summary = " ".join(prose_parts[:5])[:500].strip()
+    if not summary:
+        # Fallback: raw body text, truncated
         summary = body_words[:300].strip()
 
-    # Key facts: first 8 non-trivial sentences/bullets
-    key_facts = _extract_key_facts(body_text_parts, table_summaries)
+    # Key facts: prose parts only (no TOC entries)
+    key_facts = _extract_key_facts(prose_parts, table_summaries)
 
-    # Operational relevance: look for keywords
     op_relevance = _detect_operational_relevance(body_words)
 
-    # Gaps
     gaps = []
     if not doc.paragraphs:
         gaps.append("Document appears to have no paragraphs")
     if not full_body.strip():
         gaps.append("No text content extracted")
     if len(paragraphs_md) < 3:
-        gaps.append("Very few content blocks — document may be image-heavy or protected")
+        gaps.append("Very few content blocks -- document may be image-heavy or protected")
+    if not prose_parts:
+        gaps.append("No prose paragraphs found -- document may be heading/TOC heavy; substantive body text not reached")
+
+    # Title preference: core properties > first real heading > filename
+    title = core_title or first_real_heading or source.stem
 
     return {
-        "title": first_heading or source.stem,
+        "title": title,
         "summary": summary,
         "key_facts": key_facts,
         "operational_relevance": op_relevance,
@@ -117,15 +147,17 @@ def extract(source: Path) -> dict:
     }
 
 
-def _extract_key_facts(text_parts: list, table_summaries: list) -> list:
+def _extract_key_facts(prose_parts: list, table_summaries: list) -> list:
     facts = []
     seen = set()
-    for text in text_parts:
+    for text in prose_parts:
         text = text.strip()
-        if len(text) < 15 or text in seen:
+        if len(text) < 20 or text in seen:
+            continue
+        if _is_toc_line(text):
             continue
         seen.add(text)
-        facts.append(text)
+        facts.append(text[:200])
         if len(facts) >= 8:
             break
     for ts in table_summaries[:2]:

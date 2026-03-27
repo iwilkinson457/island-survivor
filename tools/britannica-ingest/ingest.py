@@ -24,7 +24,7 @@ from pathlib import Path
 from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).parent
-DEFAULT_OUT = SCRIPT_DIR / "notes" / "cleaned"
+DEFAULT_OUT = Path.home() / ".openclaw" / "agents" / "britannica" / "workspace" / "notes" / "cleaned"
 
 SUPPORTED = {
     ".docx": "wrap_docx",
