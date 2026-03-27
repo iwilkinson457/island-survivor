@@ -45,8 +45,17 @@ def extract(source: Path) -> dict:
     all_cell_text = []
     tables_extracted = []
 
+    skipped_chart_sheets = []
+
     for sheet_name in sheet_names[:MAX_SHEETS]:
         ws = wb[sheet_name]
+
+        # Chartsheets have no rows/cells — skip gracefully
+        from openpyxl.chartsheet.chartsheet import Chartsheet
+        if isinstance(ws, Chartsheet):
+            skipped_chart_sheets.append(sheet_name)
+            continue
+
         rows_data = []
 
         for i, row in enumerate(ws.iter_rows(max_row=MAX_ROWS, max_col=MAX_COLS, values_only=True)):
@@ -105,9 +114,14 @@ def extract(source: Path) -> dict:
         gaps.append(f"Only first {MAX_SHEETS} of {len(sheet_names)} sheets extracted")
     for te in tables_extracted:
         if te["rows"] >= MAX_ROWS - 1:
-            gaps.append(f"Sheet '{te['sheet']}' truncated at {MAX_ROWS} rows — may have more data")
+            gaps.append(f"Sheet '{te['sheet']}' truncated at {MAX_ROWS} rows -- may have more data")
+    if skipped_chart_sheets:
+        gaps.append(f"Chart sheet(s) skipped (no row data): {', '.join(skipped_chart_sheets)}")
     if not tables_extracted:
-        gaps.append("No usable sheet data found")
+        if skipped_chart_sheets and len(skipped_chart_sheets) == len(sheet_names[:MAX_SHEETS]):
+            gaps.append("All examined sheets were chart sheets -- no cell data extracted")
+        else:
+            gaps.append("No usable cell data found in examined sheets (sheets may be empty or chart-only)")
 
     body_md = "\n\n".join(body_parts)
 
