@@ -1,13 +1,13 @@
+using PepCare.Shopify.Models;
+
 namespace PepCare.Shopify.Services;
 
 public static class ShopifyClientFactory
 {
-    public static ShopifyClient Create(ShopifyConfig? config = null)
+    public static ShopifyClient Create(ShopifyConfig config, TokenCacheRecord token)
     {
-        config ??= ShopifyConfig.Load();
-
         var http = new HttpClient();
-        http.DefaultRequestHeaders.Add("X-Shopify-Access-Token", config.AccessToken);
+        http.DefaultRequestHeaders.Add("X-Shopify-Access-Token", token.AccessToken);
         http.DefaultRequestHeaders.Add("Accept", "application/json");
         http.DefaultRequestHeaders.UserAgent.ParseAdd("PepCare-Shopify/1.0");
 

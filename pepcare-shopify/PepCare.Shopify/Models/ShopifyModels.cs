@@ -2,6 +2,21 @@ using System.Text.Json.Serialization;
 
 namespace PepCare.Shopify.Models;
 
+// ── OAuth / Auth ───────────────────────────────────────────────────────────
+public record ClientCredentialsTokenResponse(
+    [property: JsonPropertyName("access_token")] string AccessToken,
+    [property: JsonPropertyName("scope")] string? Scope,
+    [property: JsonPropertyName("scopes")] string? Scopes
+);
+
+public record TokenCacheRecord(
+    string ShopDomain,
+    string ApiVersion,
+    string AccessToken,
+    string? Scope,
+    DateTime RetrievedAtUtc
+);
+
 // ── Shop ────────────────────────────────────────────────────────────────────
 public record ShopRoot([property: JsonPropertyName("shop")] ShopInfo Shop);
 public record ShopInfo(
@@ -74,7 +89,7 @@ public record ThemeListRoot([property: JsonPropertyName("themes")] List<Theme> T
 public record Theme(
     [property: JsonPropertyName("id")] long Id,
     [property: JsonPropertyName("name")] string Name,
-    [property: JsonPropertyName("role")] string Role,   // "main" = active
+    [property: JsonPropertyName("role")] string Role,
     [property: JsonPropertyName("updated_at")] DateTime? UpdatedAt
 );
 

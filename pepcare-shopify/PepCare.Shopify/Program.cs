@@ -1,4 +1,5 @@
 using PepCare.Shopify.Cli;
+using PepCare.Shopify.Models;
 using PepCare.Shopify.Services;
 using System.Text.Json;
 
@@ -23,13 +24,16 @@ catch (InvalidOperationException ex)
     Console.WriteLine();
     Console.WriteLine("Create pepcare-shopify.env with:");
     Console.WriteLine("  SHOPIFY_SHOP_DOMAIN=pepcare-lab.myshopify.com");
-    Console.WriteLine("  SHOPIFY_ACCESS_TOKEN=shpat_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    Console.WriteLine("  SHOPIFY_CLIENT_ID=...");
+    Console.WriteLine("  SHOPIFY_CLIENT_SECRET=...");
     Console.WriteLine("  SHOPIFY_API_VERSION=2024-10    # optional");
     Environment.Exit(1);
     return;
 }
 
-var client = ShopifyClientFactory.Create(config);
+var auth = new ShopifyAuthService(config);
+var token = await auth.GetAccessTokenAsync(forceRefresh: cmd is "auth-refresh" or "token-refresh");
+var client = ShopifyClientFactory.Create(config, token);
 
 try
 {
@@ -38,6 +42,13 @@ try
         case "auth-check":
         case "shop":
             await CmdShop();
+            break;
+        case "auth-refresh":
+        case "token-refresh":
+            await CmdRefresh();
+            break;
+        case "capabilities":
+            CmdCapabilities();
             break;
         case "products":
             await CmdProducts();
@@ -108,8 +119,47 @@ async Task CmdShop()
     Console.WriteLine($"  Currency     : {shop.Currency}");
     Console.WriteLine($"  Timezone     : {shop.Timezone}");
     Console.WriteLine($"  Created      : {shop.CreatedAt:yyyy-MM-dd}");
+    Console.WriteLine($"  Token scopes : {token.Scope ?? "(not returned)"}");
+    Console.WriteLine($"  Token cache  : {config.TokenCachePath}");
     var count = await client.GetProductCountAsync();
     Console.WriteLine($"  Products     : {count}");
+}
+
+async Task CmdRefresh()
+{
+    var refreshed = await auth.GetAccessTokenAsync(forceRefresh: true);
+    Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine("✓ Token refreshed and cached.");
+    Console.ResetColor();
+    Console.WriteLine($"  Shop         : {config.ShopDomain}");
+    Console.WriteLine($"  API version  : {config.ApiVersion}");
+    Console.WriteLine($"  Scopes       : {refreshed.Scope ?? "(not returned)"}");
+    Console.WriteLine($"  Cached at    : {refreshed.RetrievedAtUtc:u}");
+    Console.WriteLine($"  Cache file   : {config.TokenCachePath}");
+}
+
+void CmdCapabilities()
+{
+    Console.WriteLine("PepCare Shopify connector capabilities:");
+    Console.WriteLine("  Read:");
+    Console.WriteLine("    - shop info / auth verification");
+    Console.WriteLine("    - product list + product detail");
+    Console.WriteLine("    - custom collection list + detail");
+    Console.WriteLine("    - page list + detail");
+    Console.WriteLine("    - theme discovery (list only)");
+    Console.WriteLine("    - blog discovery (list only)");
+    Console.WriteLine();
+    Console.WriteLine("  Write (guarded with confirmation):");
+    Console.WriteLine("    - product title/body/tags/status");
+    Console.WriteLine("    - custom collection title/body");
+    Console.WriteLine("    - page title/body");
+    Console.WriteLine();
+    Console.WriteLine("  Not implemented yet:");
+    Console.WriteLine("    - theme asset editing");
+    Console.WriteLine("    - navigation / menus");
+    Console.WriteLine("    - metafields");
+    Console.WriteLine("    - orders/customers");
+    Console.WriteLine("    - GraphQL mutations");
 }
 
 async Task CmdProducts()
@@ -272,8 +322,16 @@ static void PrintHelp()
 PepCare Shopify CLI — Admin API connector
 ==========================================
 
+AUTH MODEL:
+  The connector uses Shopify client credentials to mint an access token:
+    POST /admin/oauth/access_token
+    Content-Type: application/x-www-form-urlencoded
+    grant_type=client_credentials&client_id=...&client_secret=...
+
 READ OPERATIONS (safe, no confirmation needed):
-  shop / auth-check          Verify auth and show store info
+  shop / auth-check          Verify auth and show store info + granted scopes
+  auth-refresh               Force-refresh token and rewrite local cache
+  capabilities               Show supported vs not-yet-supported operations
   products [--limit N]       List products (default 20)
                              [--status active|draft|archived]
   product --id <id>          Show full product detail (JSON)
@@ -302,10 +360,13 @@ WRITE OPERATIONS (requires y/N confirmation):
 CREDENTIALS:
   Create pepcare-shopify.env in the workspace root or beside the exe:
     SHOPIFY_SHOP_DOMAIN=pepcare-lab.myshopify.com
-    SHOPIFY_ACCESS_TOKEN=shpat_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    SHOPIFY_CLIENT_ID=...
+    SHOPIFY_CLIENT_SECRET=...
     SHOPIFY_API_VERSION=2024-10    # optional
 
-  ⚠ Do NOT commit pepcare-shopify.env (it is in .gitignore).
-  Note: a shpss_ value is the API secret key, not the Admin API access token.
+  The connector also supports importing the current legacy credential file at:
+    C:\ClareDocuments\shopify.txt
+
+  Token cache is stored under LocalAppData, not in git.
 """);
 }
