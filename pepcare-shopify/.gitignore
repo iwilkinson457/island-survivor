@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+*.suo
+*.env
+.env
+pepcare-shopify.env
+pepcare-shopify.local.env
