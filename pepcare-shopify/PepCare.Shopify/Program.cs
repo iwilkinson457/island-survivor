@@ -2,6 +2,14 @@ using PepCare.Shopify.Cli;
 using PepCare.Shopify.Services;
 using System.Text.Json;
 
+var cmd = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
+
+if (cmd is "help" or "--help" or "-h")
+{
+    PrintHelp();
+    return;
+}
+
 ShopifyConfig config;
 try
 {
@@ -22,7 +30,6 @@ catch (InvalidOperationException ex)
 }
 
 var client = ShopifyClientFactory.Create(config);
-var cmd = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
 
 try
 {
@@ -65,7 +72,6 @@ try
         case "update-page":
             await CmdUpdatePage();
             break;
-        case "help":
         default:
             PrintHelp();
             break;
