@@ -20,6 +20,7 @@ namespace ExtractionDeadIsles.Player
         [SerializeField] private float staminaDrainJump = 20f;
         [SerializeField] private float staminaRecoverRate = 10f;
         [SerializeField] private float staminaSprintMinimum = 0f;
+        [SerializeField] private float staminaSprintResumeThreshold = 20f;
         [SerializeField] private float staminaJumpMinimum = 25f;
 
         [Header("Camera Look")]
@@ -52,6 +53,7 @@ namespace ExtractionDeadIsles.Player
         private bool _isCrouching;
         private bool _isSprinting;
         private bool _isGrounded;
+        private bool _staminaExhausted;
 
         // Input
         private Vector2 _moveInput;
@@ -148,9 +150,11 @@ namespace ExtractionDeadIsles.Player
 
         private void HandleMovement()
         {
-            // Stamina regen / drain
+            // Stamina regen / drain — hysteresis prevents flicker at 0
             bool wantSprint = _sprintHeld && _moveInput.magnitude > 0.1f && !_isCrouching;
-            _isSprinting = wantSprint && _currentStamina > staminaSprintMinimum;
+            if (_currentStamina <= staminaSprintMinimum) _staminaExhausted = true;
+            if (_staminaExhausted && _currentStamina >= staminaSprintResumeThreshold) _staminaExhausted = false;
+            _isSprinting = wantSprint && !_staminaExhausted;
 
             if (_isSprinting)
                 _currentStamina = Mathf.Max(0f, _currentStamina - staminaDrainSprint * Time.deltaTime);
