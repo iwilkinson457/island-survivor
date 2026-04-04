@@ -1,5 +1,11 @@
 # Extraction: Dead Isles — Milestone A: Combat Sandbox
 
+## Art direction
+- Target style: **atmospheric stylised realism**
+- Not obvious low poly, and not ultra-real AAA realism
+- Aim for grounded tropical mood, believable decay, readable silhouettes, and atmosphere-first presentation
+- Current milestone remains greybox/system-first; final art replacement should follow this direction
+
 ## Project path
 `C:\Users\Ian\.openclaw\workspace\extraction-dead-isles\`
 

@@ -1,5 +1,11 @@
 # README — Milestone B: Home Island Early Loop
 
+## Art direction
+- Target style: **atmospheric stylised realism**
+- Prefer grounded tropical island ambience, believable foliage/shoreline/decay, and readable survival-horror silhouettes
+- Avoid obvious low-poly/cartoon presentation and avoid hyper-real asset mismatch
+- Milestone B remains prototype-greybox in implementation, but any art swaps from here should align to this direction
+
 ## What Milestone B adds
 
 Milestone B turns the Milestone A combat sandbox into the first actual survival-game loop stub on Home Island.

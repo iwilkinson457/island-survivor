@@ -1,6 +1,6 @@
 # Milestone A: Combat Sandbox — Full Build Task
 
-You are building the Unity project scaffold and all Milestone A C# scripts for *Extraction: Dead Isles*, a first-person low-poly survival + extraction game.
+You are building the Unity project scaffold and all Milestone A C# scripts for *Extraction: Dead Isles*, a first-person survival + extraction game targeting an atmospheric stylised realism art direction.
 
 ## Your working directory
 `C:\Users\Ian\.openclaw\workspace\extraction-dead-isles\`
