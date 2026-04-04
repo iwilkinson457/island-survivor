@@ -15,11 +15,47 @@
     },
     "word-docx": {
       "version": "1.0.2",
-      "installedAt": 1774134248700
+      "installedAt": 1774327437083
     },
     "unity": {
       "version": "1.0.0",
       "installedAt": 1774324696825
+    },
+    "office-document-specialist-suite": {
+      "version": "1.0.2",
+      "installedAt": 1774327446540
+    },
+    "nini-writing-proofreading": {
+      "version": "0.1.2",
+      "installedAt": 1774327446800
+    },
+    "pdf-text-extractor": {
+      "version": "1.0.0",
+      "installedAt": 1774332232343
+    },
+    "human-writing": {
+      "version": "1.0.0",
+      "installedAt": 1774384681218
+    },
+    "xero-command-line": {
+      "version": "0.0.1",
+      "installedAt": 1774571335942
+    },
+    "shopify-helper": {
+      "version": "2.0.0",
+      "installedAt": 1774750568833
+    },
+    "shopify-marketing": {
+      "version": "1.0.0",
+      "installedAt": 1774750570438
+    },
+    "shopify-tracking-auditor": {
+      "version": "1.0.0",
+      "installedAt": 1774750572227
+    },
+    "openclaw-commerce-shopify": {
+      "version": "1.0.4",
+      "installedAt": 1774750831341
     }
   }
 }
