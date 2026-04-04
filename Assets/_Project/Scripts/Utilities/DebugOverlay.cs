@@ -46,7 +46,7 @@ namespace ExtractionDeadIsles.Utilities
         private void OnGUI()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            GUILayout.BeginArea(new Rect(10, 10, 300, 220));
+            GUILayout.BeginArea(new Rect(10, 10, 300, 220), GUI.skin.box);
             GUILayout.Label($"<b>== DEBUG OVERLAY ==</b>");
 
             if (_playerStats != null)
@@ -58,6 +58,12 @@ namespace ExtractionDeadIsles.Utilities
                 GUILayout.Label($"Speed: {_playerController.CurrentSpeed:F1} m/s");
                 GUILayout.Label($"Crouching: {_playerController.IsCrouching}");
                 GUILayout.Label($"Sprinting: {_playerController.IsSprinting}");
+            }
+
+            if (_playerStats != null)
+            {
+                GUILayout.Label($"Hunger: {_playerStats.CurrentHunger:F0}");
+                GUILayout.Label($"Thirst: {_playerStats.CurrentThirst:F0}");
             }
 
             GUILayout.Label($"Zombies alive: {_zombieCount}");

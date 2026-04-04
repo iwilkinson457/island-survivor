@@ -1,12 +1,19 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using ExtractionDeadIsles.Combat;
 
 namespace ExtractionDeadIsles.Combat
 {
     public class WeaponHolder : MonoBehaviour
     {
         [SerializeField] private MeleeWeapon activeMeleeWeapon;
+        [SerializeField] private string equippedItemId;
+
+        public string EquippedItemId => equippedItemId;
+
+        public void SetEquippedItem(string itemId)
+        {
+            equippedItemId = itemId;
+        }
 
         private void Update()
         {
