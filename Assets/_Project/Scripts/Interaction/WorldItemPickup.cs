@@ -17,13 +17,13 @@ namespace ExtractionDeadIsles.Interaction
                    ?? interactor.GetComponentInParent<PlayerInventory>();
             if (inv == null) return;
 
-            if (!inv.CanAddItem(item, quantity))
+            if (!inv.TryReceiveWorldItem(item, quantity, out var result))
             {
-                Debug.Log($"[WorldItemPickup] Inventory full, cannot pick up {item?.DisplayName}.");
+                Debug.Log($"[WorldItemPickup] {result} — cannot pick up {item?.DisplayName}.");
                 return;
             }
 
-            inv.TryAddItem(item, quantity);
+            Debug.Log($"[WorldItemPickup] {result}");
             Destroy(gameObject);
         }
     }

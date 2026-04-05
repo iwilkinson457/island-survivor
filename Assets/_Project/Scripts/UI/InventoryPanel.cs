@@ -461,6 +461,12 @@ namespace ExtractionDeadIsles.UI
 
         private void StartDragFromEquipment(EquipmentSlotType slotType)
         {
+            if (slotType == EquipmentSlotType.Backpack && inventory.HasBackpackContents)
+            {
+                Debug.Log("[InventoryPanel] Cannot drag equipped backpack out while it still contains items.");
+                return;
+            }
+
             var slot      = inventory.GetEquipmentSlot(slotType);
             _dragItem     = slot.Item;
             _dragQuantity = 1;
@@ -591,6 +597,18 @@ namespace ExtractionDeadIsles.UI
                 return;
             }
 
+            if (slotType == EquipmentSlotType.Backpack)
+            {
+                if (!inventory.TryEquipItem(_dragItem, EquipmentSlotType.Backpack))
+                {
+                    ReturnDragToOrigin();
+                    return;
+                }
+
+                _dragging = false;
+                return;
+            }
+
             if (!slot.CanAccept(_dragItem))
             {
                 if (slot.HasItem)
@@ -603,14 +621,6 @@ namespace ExtractionDeadIsles.UI
                         if (PlaceItemAtSource(swapItem, 1))
                         {
                             _dragging = false;
-                            if (slotType == EquipmentSlotType.Backpack && _dragItem.BackpackStorageWidth > 0)
-                            {
-                                var overflow = inventory.SpatialGrid.ResizeWithItems(
-                                    _dragItem.BackpackStorageWidth,
-                                    Mathf.Max(1, _dragItem.BackpackStorageHeight));
-                                foreach (var ov in overflow)
-                                    SpawnWorldDrop(ov.item, ov.quantity);
-                            }
                             inventory.NotifyChanged();
                             return;
                         }
@@ -624,16 +634,6 @@ namespace ExtractionDeadIsles.UI
 
             slot.TryEquip(_dragItem);
             _dragging = false;
-
-            if (slotType == EquipmentSlotType.Backpack && _dragItem.BackpackStorageWidth > 0)
-            {
-                var overflow = inventory.SpatialGrid.ResizeWithItems(
-                    _dragItem.BackpackStorageWidth,
-                    Mathf.Max(1, _dragItem.BackpackStorageHeight));
-                foreach (var ov in overflow)
-                    SpawnWorldDrop(ov.item, ov.quantity);
-            }
-
             inventory.NotifyChanged();
         }
 
@@ -752,6 +752,12 @@ namespace ExtractionDeadIsles.UI
 
         private void ExecuteCtxDrop()
         {
+            if (_ctxDomain == InventoryDomain.Equipment && _ctxEquip == EquipmentSlotType.Backpack && inventory.HasBackpackContents)
+            {
+                Debug.Log("[InventoryPanel] Cannot drop equipped backpack while it still contains items.");
+                return;
+            }
+
             switch (_ctxDomain)
             {
                 case InventoryDomain.PocketsHotbar:
@@ -802,19 +808,16 @@ namespace ExtractionDeadIsles.UI
             foreach (var slotType in _ctxItem.CompatibleEquipmentSlots)
             {
                 var slot = inventory.GetEquipmentSlot(slotType);
-                if (slot == null || slot.HasItem) continue;
+                if (slot == null) continue;
+                if (slot.HasItem && slotType != EquipmentSlotType.Backpack) continue;
+
                 RemoveFromCtxSource();
-                slot.TryEquip(_ctxItem);
-                if (slotType == EquipmentSlotType.Backpack && _ctxItem.BackpackStorageWidth > 0)
+                if (inventory.TryEquipItem(_ctxItem, slotType))
                 {
-                    var overflow = inventory.SpatialGrid.ResizeWithItems(
-                        _ctxItem.BackpackStorageWidth,
-                        Mathf.Max(1, _ctxItem.BackpackStorageHeight));
-                    foreach (var ov in overflow)
-                        SpawnWorldDrop(ov.item, ov.quantity);
+                    equipped = true;
+                    break;
                 }
-                inventory.NotifyChanged();
-                equipped = true;
+                ReturnCtxItemToSource();
                 break;
             }
             if (!equipped)
@@ -825,11 +828,19 @@ namespace ExtractionDeadIsles.UI
         {
             var slot = inventory.GetEquipmentSlot(_ctxEquip);
             if (slot == null || !slot.HasItem) return;
-            var item = slot.Item;
-            slot.Clear();
+
+            if (_ctxEquip == EquipmentSlotType.Backpack && inventory.HasBackpackContents)
+            {
+                Debug.Log("[InventoryPanel] Cannot unequip backpack while it still contains items.");
+                return;
+            }
+
+            var item = inventory.UnequipItem(_ctxEquip);
+            if (item == null) return;
+
             if (!inventory.TryAddItem(item, 1))
             {
-                slot.TryEquip(item);
+                inventory.TryEquipItem(item, _ctxEquip);
                 Debug.Log("[InventoryPanel] Can't unequip — no room in storage.");
             }
             else
@@ -849,6 +860,20 @@ namespace ExtractionDeadIsles.UI
                     inventory.SpatialGrid.RemoveItemAt(_ctxGx, _ctxGy);
                     break;
             }
+        }
+
+        private void ReturnCtxItemToSource()
+        {
+            switch (_ctxDomain)
+            {
+                case InventoryDomain.PocketsHotbar:
+                    inventory.PocketsHotbar[_ctxPocket].TryAdd(_ctxItem, _ctxQty);
+                    break;
+                case InventoryDomain.BackpackGrid:
+                    inventory.SpatialGrid.TryPlaceFirstFit(_ctxItem, _ctxQty);
+                    break;
+            }
+            inventory.NotifyChanged();
         }
 
         // -------------------------------------------------------------------------

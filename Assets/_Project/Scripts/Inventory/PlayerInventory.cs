@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using ExtractionDeadIsles.Items;
+using ExtractionDeadIsles.Interaction;
 
 namespace ExtractionDeadIsles.Inventory
 {
@@ -92,6 +93,10 @@ namespace ExtractionDeadIsles.Inventory
         public bool TryEquipItem(ItemDefinition item, EquipmentSlotType slotType)
         {
             if (item == null) return false;
+
+            if (slotType == EquipmentSlotType.Backpack)
+                return EquipBackpack(item);
+
             var slot = GetEquipmentSlot(slotType);
             if (slot == null) return false;
             if (!slot.TryEquip(item)) return false;
@@ -103,6 +108,13 @@ namespace ExtractionDeadIsles.Inventory
         {
             var slot = GetEquipmentSlot(slotType);
             if (slot == null) return null;
+
+            if (slotType == EquipmentSlotType.Backpack && HasBackpackContents)
+            {
+                Debug.Log("[PlayerInventory] Cannot unequip backpack while it still contains items.");
+                return null;
+            }
+
             var item = slot.Unequip();
             if (item != null) NotifyChanged();
             return item;
@@ -111,24 +123,102 @@ namespace ExtractionDeadIsles.Inventory
         public bool EquipBackpack(ItemDefinition backpackItem)
         {
             if (backpackItem == null) return false;
+            if (!backpackItem.IsCompatibleWithEquipmentSlot(EquipmentSlotType.Backpack)) return false;
             if (backpackItem.BackpackStorageWidth <= 0) return false;
 
-            int newW = backpackItem.BackpackStorageWidth;
-            int newH = backpackItem.BackpackStorageHeight > 0 ? backpackItem.BackpackStorageHeight : 1;
-
-            var overflow = _spatialGrid.SimulateResize(newW, newH);
-            if (overflow.Count > 0) return false;
+            int newW = Mathf.Max(1, backpackItem.BackpackStorageWidth);
+            int newH = Mathf.Max(1, backpackItem.BackpackStorageHeight);
 
             var backpackSlot = GetEquipmentSlot(EquipmentSlotType.Backpack);
-            if (backpackSlot != null)
-                backpackSlot.Clear();
+            if (backpackSlot == null) return false;
 
-            if (backpackSlot != null)
-                backpackSlot.TryEquip(backpackItem);
+            if (!backpackSlot.HasItem)
+            {
+                if (!backpackSlot.TryEquip(backpackItem)) return false;
+                _spatialGrid.Resize(newW, newH);
+                NotifyChanged();
+                return true;
+            }
 
-            _spatialGrid.ResizeWithItems(newW, newH);
+            if (backpackSlot.Item == backpackItem)
+                return false;
+
+            SpawnEquippedBackpackAsWorldContainer(backpackSlot.Item);
+            backpackSlot.Clear();
+
+            if (!backpackSlot.TryEquip(backpackItem))
+                return false;
+
+            _spatialGrid.Resize(newW, newH);
             NotifyChanged();
             return true;
+        }
+
+        public bool TryReceiveWorldItem(ItemDefinition item, int amount, out string result)
+        {
+            result = "Inventory full";
+            if (item == null || amount <= 0)
+            {
+                result = "Invalid item";
+                return false;
+            }
+
+            if (amount == 1 && TryAutoEquipWorldItem(item))
+            {
+                result = $"Auto-equipped {item.DisplayName}";
+                return true;
+            }
+
+            if (!CanAddItem(item, amount))
+            {
+                result = "Inventory full";
+                return false;
+            }
+
+            if (!TryAddItem(item, amount))
+            {
+                result = "Inventory full";
+                return false;
+            }
+
+            result = $"Picked up {item.DisplayName}";
+            return true;
+        }
+
+        public bool HasBackpackContents => _spatialGrid != null && _spatialGrid.GetAllPlaced().Count > 0;
+
+        private bool TryAutoEquipWorldItem(ItemDefinition item)
+        {
+            if (item == null || item.CompatibleEquipmentSlots == null || item.CompatibleEquipmentSlots.Length == 0)
+                return false;
+
+            foreach (var slotType in item.CompatibleEquipmentSlots)
+            {
+                var slot = GetEquipmentSlot(slotType);
+                if (slot == null || slot.HasItem) continue;
+                return TryEquipItem(item, slotType);
+            }
+
+            return false;
+        }
+
+        private void SpawnEquippedBackpackAsWorldContainer(ItemDefinition equippedBackpack)
+        {
+            if (equippedBackpack == null) return;
+
+            Vector3 spawnPos = transform.position + transform.forward * 1.5f + Vector3.up * 0.5f;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = $"BackpackContainer_{equippedBackpack.DisplayName}";
+            go.transform.position = spawnPos;
+            go.transform.localScale = new Vector3(0.6f, 0.4f, 0.8f);
+
+            int layer = LayerMask.NameToLayer("Resource");
+            if (layer >= 0) go.layer = layer;
+
+            var container = go.AddComponent<WorldBackpackContainer>();
+            container.Initialize(equippedBackpack, _spatialGrid.GetAllPlaced());
+
+            Debug.Log($"[PlayerInventory] Spawned world backpack container for {equippedBackpack.DisplayName}.");
         }
 
         // -------------------------------------------------------------------------
