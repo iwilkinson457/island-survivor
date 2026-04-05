@@ -5265,6 +5265,8 @@ MonoBehaviour:
   defaultRecipes:
   - {fileID: 11400000, guid: bd2d0b1468a06cd4d8f3e2d50b09ed91, type: 2}
   - {fileID: 11400000, guid: a0994f2ca38931e468b26af32dc585bd, type: 2}
+  - {fileID: 11400000, guid: 3bf65a9074ef4f7cb8ce1d4d6a91e2f3, type: 2}
+  - {fileID: 11400000, guid: c1d8a2f34e6b49d6a72c5190b5e4f8a9, type: 2}
   inventory: {fileID: 1707105430}
 --- !u!114 &1707105436
 MonoBehaviour:
