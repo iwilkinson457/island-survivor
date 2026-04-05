@@ -56,15 +56,12 @@ namespace ExtractionDeadIsles.UI
             if (!_visible || inventory == null) return;
 
             GUILayout.BeginArea(new Rect(Screen.width - 360, 10, 350, Screen.height - 20), GUI.skin.box);
-            GUILayout.Label("<b>Inventory Debug</b>");
+            GUILayout.Label("<b>Inventory Debug</b> — use InventoryPanel for full UI");
             GUILayout.Label($"Near campfire: {campfireTracker != null && campfireTracker.IsNearCampfire}");
             GUILayout.Label($"Placement mode: {placementController != null && placementController.IsInPlacementMode}");
             GUILayout.Space(8);
             GUILayout.Label("Hotbar");
             DrawSlots(inventory.Hotbar);
-            GUILayout.Space(8);
-            GUILayout.Label("Backpack");
-            DrawSlots(inventory.Backpack);
 
             if (crafter != null)
             {
