@@ -11,11 +11,18 @@ namespace ExtractionDeadIsles.Inventory
         [SerializeField] private int backpackGridCapacity = 20;
         [SerializeField] private int hotbarSize = 6;
 
-        // --- Domain: BackpackGrid ---
+        [Header("Spatial Backpack Grid")]
+        [SerializeField] private int backpackSpatialWidth  = 3;
+        [SerializeField] private int backpackSpatialHeight = 3;
+
+        // --- Domain: BackpackGrid (legacy flat-list, kept for prototype backward compat) ---
         private List<InventorySlot> _backpackGrid;
 
         // --- Domain: PocketsHotbar ---
         private List<InventorySlot> _pocketsHotbar;
+
+        // --- Domain: Spatial BackpackGrid ---
+        private BackpackGrid _spatialBackpack;
 
         // --- Domain: Equipment ---
         private EquipmentSlot[] _equipmentSlots;
@@ -29,6 +36,9 @@ namespace ExtractionDeadIsles.Inventory
         public int BackpackGridCapacity => backpackGridCapacity;
         public int HotbarSize => hotbarSize;
 
+        /// <summary>The spatial 2D grid that backs the equipped backpack storage.</summary>
+        public BackpackGrid SpatialBackpack => _spatialBackpack;
+
         // Legacy-compatible aliases (used by InventoryDebugPanel and other callers)
         public IReadOnlyList<InventorySlot> Backpack => _backpackGrid;
         public IReadOnlyList<InventorySlot> Hotbar => _pocketsHotbar;
@@ -36,9 +46,12 @@ namespace ExtractionDeadIsles.Inventory
 
         private void Awake()
         {
-            _pocketsHotbar = CreateSlots(hotbarSize);
-            _backpackGrid = CreateSlots(backpackGridCapacity);
+            _pocketsHotbar  = CreateSlots(hotbarSize);
+            _backpackGrid   = CreateSlots(backpackGridCapacity);
             _equipmentSlots = CreateEquipmentSlots();
+            _spatialBackpack = new BackpackGrid(
+                Mathf.Max(1, backpackSpatialWidth),
+                Mathf.Max(1, backpackSpatialHeight));
         }
 
         private List<InventorySlot> CreateSlots(int count)
@@ -96,6 +109,87 @@ namespace ExtractionDeadIsles.Inventory
             var item = slot.Unequip();
             if (item != null) NotifyChanged();
             return item;
+        }
+
+        // -------------------------------------------------------------------------
+        // Spatial BackpackGrid domain
+        // -------------------------------------------------------------------------
+
+        /// <summary>
+        /// Places an item at (col, row) in the spatial backpack grid.
+        /// Returns the resulting <see cref="PlacedItem"/> on success, or null on failure.
+        /// On failure the grid is left unchanged (safe-reject).
+        /// </summary>
+        public PlacedItem TryPlaceInBackpack(ItemDefinition item, int col, int row, bool rotated = false)
+        {
+            if (item == null) return null;
+            var placed = _spatialBackpack.TryPlace(item, col, row, rotated);
+            if (placed != null) NotifyChanged();
+            return placed;
+        }
+
+        /// <summary>
+        /// Removes a placed item from the spatial backpack grid.
+        /// Returns false if the item is not found in the grid.
+        /// </summary>
+        public bool TryRemoveFromBackpack(PlacedItem placed)
+        {
+            if (!_spatialBackpack.TryRemove(placed)) return false;
+            NotifyChanged();
+            return true;
+        }
+
+        /// <summary>
+        /// Moves an already-placed item to a new position/rotation in the spatial grid.
+        /// Atomic: on failure the item remains at its original position.
+        /// Returns false if the move fails (out of bounds or overlapping another item).
+        /// </summary>
+        public bool TryMoveInBackpack(PlacedItem placed, int newCol, int newRow, bool newRotated)
+        {
+            if (!_spatialBackpack.TryMove(placed, newCol, newRow, newRotated)) return false;
+            NotifyChanged();
+            return true;
+        }
+
+        /// <summary>
+        /// Finds the first available position and places the item there.
+        /// If the item is rotatable and doesn't fit in the given orientation, tries the other.
+        /// Returns null if no position fits at all (full or item too large).
+        /// </summary>
+        public PlacedItem TryAutoPlaceInBackpack(ItemDefinition item, bool rotated = false)
+        {
+            if (item == null) return null;
+
+            if (_spatialBackpack.TryFindFirstFit(item, rotated, out int col, out int row))
+                return TryPlaceInBackpack(item, col, row, rotated);
+
+            // Try opposite rotation for rotatable items
+            if (item.Rotatable && _spatialBackpack.TryFindFirstFit(item, !rotated, out col, out row))
+                return TryPlaceInBackpack(item, col, row, !rotated);
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns true if the item fits somewhere in the spatial backpack grid (either orientation).
+        /// </summary>
+        public bool CanFitInBackpack(ItemDefinition item, bool rotated = false)
+        {
+            if (item == null) return false;
+            if (_spatialBackpack.TryFindFirstFit(item, rotated, out _, out _)) return true;
+            if (item.Rotatable && _spatialBackpack.TryFindFirstFit(item, !rotated, out _, out _)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Resizes the spatial backpack grid (e.g. when the player equips a larger/smaller backpack).
+        /// Returns false and leaves the grid unchanged if existing contents would overflow the new size.
+        /// </summary>
+        public bool TryResizeSpatialBackpack(int newWidth, int newHeight)
+        {
+            if (!_spatialBackpack.TryResize(newWidth, newHeight)) return false;
+            NotifyChanged();
+            return true;
         }
 
         // -------------------------------------------------------------------------
