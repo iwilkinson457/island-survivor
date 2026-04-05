@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.Items.ItemDefinition
   itemId: starter_sack
   displayName: Starter Sack
+  shortDescription: 
+  icon: {fileID: 21300000, guid: 99ab9b488743a9240bd7e564281ddd81, type: 3}
   category: 0
   stackable: 0
   maxStack: 1
@@ -25,7 +27,7 @@ MonoBehaviour:
   thirstRestore: 0
   gatherToolMultiplier: 1
   compatibleEquipmentSlots: 05000000
-  backpackStorageWidth: 3
+  backpackStorageWidth: 2
   backpackStorageHeight: 3
   gridWidth: 1
   gridHeight: 1

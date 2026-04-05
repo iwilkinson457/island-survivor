@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.Items.ItemDefinition
   itemId: string
   displayName: String
+  shortDescription: 
+  icon: {fileID: 21300000, guid: 55c1b993c98053c4588749f6a5190f34, type: 3}
   category: 6
   stackable: 1
   maxStack: 20
@@ -24,7 +26,7 @@ MonoBehaviour:
   hungerRestore: 0
   thirstRestore: 0
   gatherToolMultiplier: 1
-  compatibleEquipmentSlots: []
+  compatibleEquipmentSlots: 
   backpackStorageWidth: 0
   backpackStorageHeight: 0
   gridWidth: 1

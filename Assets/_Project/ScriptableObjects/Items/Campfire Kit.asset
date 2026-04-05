@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.Items.ItemDefinition
   itemId: campfire_kit
   displayName: Campfire Kit
+  shortDescription: 
+  icon: {fileID: 21300000, guid: d355c1add55468640b62cfe92d1ed705, type: 3}
   category: 4
   stackable: 1
   maxStack: 5
@@ -24,3 +26,9 @@ MonoBehaviour:
   hungerRestore: 0
   thirstRestore: 0
   gatherToolMultiplier: 1
+  compatibleEquipmentSlots: 
+  backpackStorageWidth: 0
+  backpackStorageHeight: 0
+  gridWidth: 1
+  gridHeight: 1
+  rotatable: 0
