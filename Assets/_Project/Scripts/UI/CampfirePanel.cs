@@ -19,17 +19,6 @@ namespace ExtractionDeadIsles.UI
             CampfireOutput
         }
 
-        private struct PlayerViewEntry
-        {
-            public ItemDefinition item;
-            public int quantity;
-            public bool fromPocket;
-            public int pocketIndex;
-            public int gridX;
-            public int gridY;
-            public bool gridRotated;
-        }
-
         [SerializeField] private PlayerInventory inventory;
 
         private CampfireStation _station;
@@ -43,12 +32,14 @@ namespace ExtractionDeadIsles.UI
         private bool _dragGridRotated;
         private ItemDefinition _tooltipItem;
         private Rect _tooltipAnchor;
+        private Vector2 _inventoryScroll;
 
-        private const float PANEL_MARGIN_X = 48f;
-        private const float PANEL_MARGIN_Y = 36f;
+        private const float PANEL_MARGIN_X = 40f;
+        private const float PANEL_MARGIN_Y = 28f;
         private const float PANEL_PADDING = 20f;
-        private const float SLOT_SIZE = 92f;
-        private const float SLOT_GAP = 8f;
+        private const float SLOT_SIZE = 76f;
+        private const float SLOT_GAP = 6f;
+        private const float HOTBAR_LABEL_H = 18f;
 
         private void Reset()
         {
@@ -105,7 +96,7 @@ namespace ExtractionDeadIsles.UI
             float innerY = panelRect.y + PANEL_PADDING;
             float innerW = panelRect.width - PANEL_PADDING * 2f;
             float innerH = panelRect.height - PANEL_PADDING * 2f;
-            float leftW = Mathf.Max(420f, innerW * 0.58f);
+            float leftW = Mathf.Max(520f, innerW * 0.62f);
             float rightW = innerW - leftW - 18f;
             Rect playerRect = new Rect(innerX, innerY + 28f, leftW, innerH - 28f);
             Rect stationRect = new Rect(playerRect.xMax + 18f, innerY + 28f, rightW, innerH - 28f);
@@ -122,7 +113,7 @@ namespace ExtractionDeadIsles.UI
             if (_dragItem != null && e.type == EventType.Repaint)
             {
                 var dragRect = new Rect(e.mousePosition.x - (SLOT_SIZE * 0.5f), e.mousePosition.y - (SLOT_SIZE * 0.5f), SLOT_SIZE, SLOT_SIZE);
-                DrawItemCard(dragRect, _dragItem, _dragQuantity, new Color(1f, 1f, 1f, 0.85f));
+                DrawItemCard(dragRect, _dragItem, _dragQuantity, new Color(1f, 1f, 1f, 0.88f), true);
             }
 
             if (_tooltipItem != null && _dragItem == null)
@@ -138,34 +129,67 @@ namespace ExtractionDeadIsles.UI
         private void DrawPlayerInventory(Rect rect, Event e)
         {
             GUI.Box(rect, "");
-            var entries = BuildPlayerEntries();
-            int columns = Mathf.Max(4, Mathf.FloorToInt((rect.width - 16f) / (SLOT_SIZE + SLOT_GAP)));
-            float startX = rect.x + 8f;
-            float startY = rect.y + 28f;
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 6f, rect.width - 16f, 20f), "Full hotbar + backpack view. Drop cooked output anywhere in this panel to return it to inventory.");
 
-            GUI.Label(new Rect(rect.x + 8f, rect.y + 6f, rect.width - 16f, 20f), "Drag raw fish to Input, fuel items to Fuel, or drag finished output back here.");
+            Rect contentRect = new Rect(rect.x + 8f, rect.y + 30f, rect.width - 16f, rect.height - 38f);
+            float gridPixelW = inventory.SpatialGrid.Width * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP;
+            float gridPixelH = inventory.SpatialGrid.Height * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP;
+            float hotbarPixelW = inventory.PocketsHotbar.Count * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP;
+            float contentWidth = Mathf.Max(contentRect.width - 20f, gridPixelW + 12f, hotbarPixelW + 12f);
+            float contentHeight = 26f + SLOT_SIZE + 20f + HOTBAR_LABEL_H + 8f + gridPixelH + 12f;
+            Rect viewRect = new Rect(0f, 0f, contentWidth, contentHeight);
 
-            for (int i = 0; i < entries.Count; i++)
+            _inventoryScroll = GUI.BeginScrollView(contentRect, _inventoryScroll, viewRect);
+
+            float hotbarX = 6f + Mathf.Max(0f, (contentWidth - hotbarPixelW) * 0.5f);
+            float hotbarY = 6f + HOTBAR_LABEL_H;
+            GUI.Label(new Rect(6f, 4f, contentWidth - 12f, HOTBAR_LABEL_H), "<b>Pockets / Hotbar</b>");
+            DrawPocketSlots(hotbarX, hotbarY, e);
+
+            float gridLabelY = hotbarY + SLOT_SIZE + 20f;
+            GUI.Label(new Rect(6f, gridLabelY, contentWidth - 12f, HOTBAR_LABEL_H), $"<b>Backpack Grid</b> ({inventory.SpatialGrid.Width}x{inventory.SpatialGrid.Height})");
+            float gridX = 6f + Mathf.Max(0f, (contentWidth - gridPixelW) * 0.5f);
+            float gridY = gridLabelY + HOTBAR_LABEL_H + 8f;
+            DrawBackpackGrid(gridX, gridY, e);
+
+            GUI.EndScrollView();
+
+            if (_dragItem != null && e.type == EventType.MouseUp && e.button == 0 && contentRect.Contains(e.mousePosition))
             {
-                int col = i % columns;
-                int row = i / columns;
-                Rect slotRect = new Rect(startX + col * (SLOT_SIZE + SLOT_GAP), startY + row * (SLOT_SIZE + SLOT_GAP), SLOT_SIZE, SLOT_SIZE);
-                var entry = entries[i];
-                DrawItemCard(slotRect, entry.item, entry.quantity, new Color(0.65f, 0.82f, 1f));
-                if (slotRect.Contains(e.mousePosition))
-                    SetTooltip(entry.item, slotRect);
-
-                if (e.type == EventType.MouseDown && e.button == 0 && _dragItem == null && slotRect.Contains(e.mousePosition))
+                if (TryDropToPlayerInventory())
                 {
-                    if (entry.fromPocket)
-                        StartDragFromPocket(entry.pocketIndex);
-                    else
-                        StartDragFromGrid(entry.gridX, entry.gridY, entry.gridRotated);
+                    e.Use();
+                    return;
+                }
+            }
+        }
+
+        private void DrawPocketSlots(float ox, float oy, Event e)
+        {
+            for (int i = 0; i < inventory.PocketsHotbar.Count; i++)
+            {
+                var slot = inventory.PocketsHotbar[i];
+                Rect slotRect = new Rect(ox + i * (SLOT_SIZE + SLOT_GAP), oy, SLOT_SIZE, SLOT_SIZE);
+                DrawEmptySlot(slotRect);
+
+                if (slot.HasItem)
+                {
+                    DrawItemCard(slotRect, slot.Item, slot.Quantity, new Color(0.65f, 0.82f, 1f), false);
+                    if (slotRect.Contains(e.mousePosition))
+                        SetTooltip(slot.Item, slotRect);
+                }
+
+                if (!slotRect.Contains(e.mousePosition))
+                    continue;
+
+                if (e.type == EventType.MouseDown && e.button == 0 && _dragItem == null && slot.HasItem)
+                {
+                    StartDragFromPocket(i);
                     e.Use();
                     return;
                 }
 
-                if (e.type == EventType.MouseUp && e.button == 0 && _dragItem != null && slotRect.Contains(e.mousePosition))
+                if (e.type == EventType.MouseUp && e.button == 0 && _dragItem != null)
                 {
                     if (TryDropToPlayerInventory())
                     {
@@ -174,9 +198,54 @@ namespace ExtractionDeadIsles.UI
                     }
                 }
             }
+        }
 
-            if (entries.Count == 0)
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 34f, rect.width - 20f, 24f), "Inventory empty.");
+        private void DrawBackpackGrid(float ox, float oy, Event e)
+        {
+            var grid = inventory.SpatialGrid;
+
+            for (int row = 0; row < grid.Height; row++)
+            {
+                for (int col = 0; col < grid.Width; col++)
+                {
+                    Rect cellRect = new Rect(ox + col * (SLOT_SIZE + SLOT_GAP), oy + row * (SLOT_SIZE + SLOT_GAP), SLOT_SIZE, SLOT_SIZE);
+                    DrawEmptySlot(cellRect);
+                }
+            }
+
+            var drawn = new HashSet<PlacedItem>();
+            foreach (var placed in grid.GetAllPlaced())
+            {
+                if (placed == null || drawn.Contains(placed))
+                    continue;
+
+                drawn.Add(placed);
+                float iw = placed.EffectiveWidth * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP;
+                float ih = placed.EffectiveHeight * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP;
+                Rect itemRect = new Rect(ox + placed.x * (SLOT_SIZE + SLOT_GAP), oy + placed.y * (SLOT_SIZE + SLOT_GAP), iw, ih);
+                DrawItemCard(itemRect, placed.item, placed.quantity, new Color(0.65f, 0.82f, 1f), false);
+
+                if (itemRect.Contains(e.mousePosition))
+                {
+                    SetTooltip(placed.item, itemRect);
+
+                    if (e.type == EventType.MouseDown && e.button == 0 && _dragItem == null)
+                    {
+                        StartDragFromGrid(placed);
+                        e.Use();
+                        return;
+                    }
+                }
+            }
+
+            if (_dragItem != null && e.type == EventType.MouseUp && e.button == 0)
+            {
+                Rect fullGridRect = new Rect(ox, oy, grid.Width * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP, grid.Height * (SLOT_SIZE + SLOT_GAP) - SLOT_GAP);
+                if (fullGridRect.Contains(e.mousePosition) && TryDropToPlayerInventory())
+                {
+                    e.Use();
+                }
+            }
         }
 
         private void DrawStation(Rect rect, Event e)
@@ -187,87 +256,59 @@ namespace ExtractionDeadIsles.UI
             GUI.Label(new Rect(rect.x + 10f, rect.y + 48f, rect.width - 20f, 20f), $"Cook Progress: {_station.CurrentCookProgress:0.0}/{_station.CookDurationSeconds:0.0}s");
 
             float slotX = rect.x + 10f;
-            float slotY = rect.y + 86f;
-            float labelW = rect.width - 20f;
-            GUI.Label(new Rect(slotX, slotY, labelW, 18f), "Input");
-            Rect inputRect = new Rect(slotX, slotY + 20f, SLOT_SIZE, SLOT_SIZE);
-            DrawStationSlot(inputRect, _station.InputItem, _station.InputQuantity, new Color(0.66f, 0.84f, 1f));
-
-            GUI.Label(new Rect(slotX + 120f, slotY, labelW, 18f), "Fuel");
-            Rect fuelRect = new Rect(slotX + 120f, slotY + 20f, SLOT_SIZE, SLOT_SIZE);
-            DrawStationSlot(fuelRect, _station.FuelItem, _station.FuelQuantity, new Color(1f, 0.86f, 0.55f));
-
-            GUI.Label(new Rect(slotX + 240f, slotY, labelW, 18f), "Output");
-            Rect outputRect = new Rect(slotX + 240f, slotY + 20f, SLOT_SIZE, SLOT_SIZE);
-            DrawStationSlot(outputRect, _station.OutputItem, _station.OutputQuantity, new Color(0.7f, 1f, 0.7f));
-
-            HandleStationSlotEvents(e, inputRect, DragSource.CampfireInput, _station.InputItem, () => StartDragFromStation(DragSource.CampfireInput), () => TryDropToStationInput());
-            HandleStationSlotEvents(e, fuelRect, DragSource.CampfireFuel, _station.FuelItem, () => StartDragFromStation(DragSource.CampfireFuel), () => TryDropToStationFuel());
-            HandleStationSlotEvents(e, outputRect, DragSource.CampfireOutput, _station.OutputItem, () => StartDragFromStation(DragSource.CampfireOutput), () => false);
+            float slotY = rect.y + 96f;
+            DrawLabeledStationSlot(new Rect(slotX, slotY, SLOT_SIZE, SLOT_SIZE), "Input", _station.InputItem, _station.InputQuantity, new Color(0.66f, 0.84f, 1f), e, DragSource.CampfireInput, () => TryDropToStationInput());
+            DrawLabeledStationSlot(new Rect(slotX + SLOT_SIZE + 22f, slotY, SLOT_SIZE, SLOT_SIZE), "Fuel", _station.FuelItem, _station.FuelQuantity, new Color(1f, 0.86f, 0.55f), e, DragSource.CampfireFuel, () => TryDropToStationFuel());
+            DrawLabeledStationSlot(new Rect(slotX + (SLOT_SIZE + 22f) * 2f, slotY, SLOT_SIZE, SLOT_SIZE), "Output", _station.OutputItem, _station.OutputQuantity, new Color(0.7f, 1f, 0.7f), e, DragSource.CampfireOutput, null);
 
             string lightLabel = _station.IsBurning ? "Burning" : "Light Fire";
             GUI.enabled = !_station.IsBurning && _station.CanLight;
-            if (GUI.Button(new Rect(slotX, slotY + 140f, 140f, 34f), lightLabel))
+            if (GUI.Button(new Rect(slotX, slotY + SLOT_SIZE + 26f, 140f, 34f), lightLabel))
                 _station.TryLight();
             GUI.enabled = true;
 
-            GUI.Label(new Rect(slotX, slotY + 182f, rect.width - 20f, 60f),
-                "Use the same drag/drop idea as inventory: drag raw fish into Input, drag sticks into Fuel, then drag cooked fish out of Output.");
+            if (_station.OutputItem != null)
+            {
+                if (GUI.Button(new Rect(slotX + 156f, slotY + SLOT_SIZE + 26f, 180f, 34f), "Take Output To Inventory"))
+                {
+                    _station.TryTakeOutputToPlayer(inventory);
+                    inventory.NotifyChanged();
+                }
+            }
+
+            GUI.Label(new Rect(slotX, slotY + SLOT_SIZE + 70f, rect.width - 20f, 80f),
+                "Drag raw fish into Input, drag sticks into Fuel, and drag cooked fish from Output back into the inventory panel. The quick take button is also there as a safety net.");
         }
 
-        private void HandleStationSlotEvents(Event e, Rect rect, DragSource slotSource, ItemDefinition item, System.Action startDrag, System.Func<bool> tryDrop)
+        private void DrawLabeledStationSlot(Rect rect, string label, ItemDefinition item, int quantity, Color tint, Event e, DragSource source, System.Func<bool> tryDrop)
         {
-            if (item != null && rect.Contains(e.mousePosition))
-                SetTooltip(item, rect);
-
-            if (e.type == EventType.MouseDown && e.button == 0 && _dragItem == null && item != null && rect.Contains(e.mousePosition))
+            GUI.Label(new Rect(rect.x, rect.y - 18f, rect.width + 40f, 16f), label);
+            DrawEmptySlot(rect);
+            if (item != null)
             {
-                startDrag?.Invoke();
+                DrawItemCard(rect, item, quantity, tint, false);
+                if (rect.Contains(e.mousePosition))
+                    SetTooltip(item, rect);
+            }
+
+            if (!rect.Contains(e.mousePosition))
+                return;
+
+            if (e.type == EventType.MouseDown && e.button == 0 && _dragItem == null && item != null)
+            {
+                StartDragFromStation(source);
                 e.Use();
                 return;
             }
 
-            if (e.type == EventType.MouseUp && e.button == 0 && _dragItem != null && rect.Contains(e.mousePosition))
+            if (e.type == EventType.MouseUp && e.button == 0 && _dragItem != null && tryDrop != null)
             {
                 if (tryDrop())
                 {
                     e.Use();
+                    return;
                 }
             }
-        }
-
-        private List<PlayerViewEntry> BuildPlayerEntries()
-        {
-            var entries = new List<PlayerViewEntry>();
-
-            for (int i = 0; i < inventory.PocketsHotbar.Count; i++)
-            {
-                var slot = inventory.PocketsHotbar[i];
-                if (!slot.HasItem) continue;
-                entries.Add(new PlayerViewEntry
-                {
-                    item = slot.Item,
-                    quantity = slot.Quantity,
-                    fromPocket = true,
-                    pocketIndex = i
-                });
-            }
-
-            foreach (var placed in inventory.SpatialGrid.GetAllPlaced())
-            {
-                if (placed == null || placed.item == null || placed.quantity <= 0) continue;
-                entries.Add(new PlayerViewEntry
-                {
-                    item = placed.item,
-                    quantity = placed.quantity,
-                    fromPocket = false,
-                    gridX = placed.x,
-                    gridY = placed.y,
-                    gridRotated = placed.rotated
-                });
-            }
-
-            return entries;
         }
 
         private void StartDragFromPocket(int index)
@@ -282,16 +323,15 @@ namespace ExtractionDeadIsles.UI
             inventory.NotifyChanged();
         }
 
-        private void StartDragFromGrid(int x, int y, bool rotated)
+        private void StartDragFromGrid(PlacedItem placed)
         {
-            var placed = inventory.SpatialGrid.GetItemAt(x, y);
             if (placed == null) return;
             _dragSource = DragSource.PlayerGrid;
             _dragItem = placed.item;
             _dragQuantity = placed.quantity;
             _dragGridX = placed.x;
             _dragGridY = placed.y;
-            _dragGridRotated = rotated;
+            _dragGridRotated = placed.rotated;
             inventory.SpatialGrid.RemovePlaced(placed);
             inventory.NotifyChanged();
         }
@@ -390,24 +430,16 @@ namespace ExtractionDeadIsles.UI
             _dragGridRotated = false;
         }
 
-        private void DrawStationSlot(Rect rect, ItemDefinition item, int quantity, Color tint)
+        private void DrawEmptySlot(Rect rect)
         {
-            GUI.color = tint;
+            GUI.color = new Color(0.15f, 0.15f, 0.16f, 1f);
             GUI.Box(rect, "");
             GUI.color = Color.white;
-
-            if (item != null)
-            {
-                DrawSlotIcon(rect, item.Icon);
-                DrawQuantityBadge(rect, quantity);
-                if (item.Icon == null)
-                    GUI.Label(new Rect(rect.x + 4f, rect.y + 4f, rect.width - 8f, rect.height - 8f), item.DisplayName);
-            }
         }
 
-        private void DrawItemCard(Rect rect, ItemDefinition item, int quantity, Color tint)
+        private void DrawItemCard(Rect rect, ItemDefinition item, int quantity, Color tint, bool translucent)
         {
-            GUI.color = tint;
+            GUI.color = translucent ? tint : new Color(tint.r, tint.g, tint.b, 1f);
             GUI.Box(rect, "");
             GUI.color = Color.white;
 
