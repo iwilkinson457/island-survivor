@@ -156,33 +156,19 @@ namespace ExtractionDeadIsles.Inventory
 
         public bool TryReceiveWorldItem(ItemDefinition item, int amount, out string result)
         {
-            result = "Inventory full";
-            if (item == null || amount <= 0)
-            {
-                result = "Invalid item";
-                return false;
-            }
+            return TryReceiveItem(item, amount, allowAutoEquip: true, verb: "Picked up", out result);
+        }
 
-            if (amount == 1 && TryAutoEquipWorldItem(item))
-            {
-                result = $"Auto-equipped {item.DisplayName}";
-                return true;
-            }
+        public bool CanReceiveCraftedItem(ItemDefinition item, int amount)
+        {
+            if (item == null || amount <= 0) return false;
+            if (amount == 1 && HasFreeCompatibleEquipmentSlot(item)) return true;
+            return CanAddItem(item, amount);
+        }
 
-            if (!CanAddItem(item, amount))
-            {
-                result = "Inventory full";
-                return false;
-            }
-
-            if (!TryAddItem(item, amount))
-            {
-                result = "Inventory full";
-                return false;
-            }
-
-            result = $"Picked up {item.DisplayName}";
-            return true;
+        public bool TryReceiveCraftedItem(ItemDefinition item, int amount, out string result)
+        {
+            return TryReceiveItem(item, amount, allowAutoEquip: true, verb: "Crafted", out result);
         }
 
         public bool HasBackpackContents => _spatialGrid != null && _spatialGrid.GetAllPlaced().Count > 0;
@@ -200,6 +186,52 @@ namespace ExtractionDeadIsles.Inventory
             }
 
             return false;
+        }
+
+        private bool HasFreeCompatibleEquipmentSlot(ItemDefinition item)
+        {
+            if (item == null || item.CompatibleEquipmentSlots == null || item.CompatibleEquipmentSlots.Length == 0)
+                return false;
+
+            foreach (var slotType in item.CompatibleEquipmentSlots)
+            {
+                var slot = GetEquipmentSlot(slotType);
+                if (slot != null && !slot.HasItem)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool TryReceiveItem(ItemDefinition item, int amount, bool allowAutoEquip, string verb, out string result)
+        {
+            result = "Inventory full";
+            if (item == null || amount <= 0)
+            {
+                result = "Invalid item";
+                return false;
+            }
+
+            if (allowAutoEquip && amount == 1 && TryAutoEquipWorldItem(item))
+            {
+                result = $"Auto-equipped {item.DisplayName}";
+                return true;
+            }
+
+            if (!CanAddItem(item, amount))
+            {
+                result = "Inventory full";
+                return false;
+            }
+
+            if (!TryAddItem(item, amount))
+            {
+                result = "Inventory full";
+                return false;
+            }
+
+            result = $"{verb} {item.DisplayName}";
+            return true;
         }
 
         private void SpawnEquippedBackpackAsWorldContainer(ItemDefinition equippedBackpack)

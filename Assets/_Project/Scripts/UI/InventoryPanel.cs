@@ -22,14 +22,13 @@ namespace ExtractionDeadIsles.UI
         [SerializeField] private float worldDropDistance = 1.5f;
         [SerializeField] private LayerMask interactLayer;
 
-        const float PANEL_W = 820f;
-        const float PANEL_H = 600f;
+        const float PANEL_MARGIN_X = 36f;
+        const float PANEL_MARGIN_Y = 28f;
         const float CELL = 52f;
         const float GAP = 2f;
         const float STEP = 54f;
-        const float LEFT_W = 490f;
-        const float RIGHT_X_OFFSET = 505f;
-        const float RIGHT_W = 305f;
+        const float EQUIP_W = 360f;
+        const float EQUIP_GAP = 16f;
 
         bool _visible;
         int _tab;
@@ -108,23 +107,30 @@ namespace ExtractionDeadIsles.UI
             var e = Event.current;
 
             _panelRect = new Rect(
-                (Screen.width  - PANEL_W) * 0.5f,
-                (Screen.height - PANEL_H) * 0.5f,
-                PANEL_W, PANEL_H);
+                PANEL_MARGIN_X,
+                PANEL_MARGIN_Y,
+                Screen.width - (PANEL_MARGIN_X * 2f),
+                Screen.height - (PANEL_MARGIN_Y * 2f));
 
             float px = _panelRect.x;
             float py = _panelRect.y;
+            float equipX = px + 16f;
+            float equipY = py + 16f;
+            float equipH = _panelRect.height - 32f;
+            float contentX = equipX + EQUIP_W + EQUIP_GAP;
+            float contentY = py + 16f;
+            float contentW = _panelRect.width - (contentX - px) - 16f;
+            float contentH = _panelRect.height - 32f;
 
             GUI.Box(_panelRect, "");
-            GUI.Box(new Rect(px + 498, py + 5, 3, PANEL_H - 10), "");
+            GUI.Box(new Rect(equipX + EQUIP_W + 6f, py + 8f, 3f, _panelRect.height - 16f), "");
 
-            DrawTabs(px + 5, py + 5);
+            DrawEquipmentPanel(equipX, equipY, EQUIP_W, equipH);
+            DrawTabs(contentX, contentY, contentW);
             if (_tab == 0)
-                DrawStorageTab(px + 5, py + 38);
+                DrawStorageTab(contentX, contentY + 42f, contentW, contentH - 48f);
             else
-                DrawCraftingTab(px + 5, py + 38);
-
-            DrawEquipmentPanel(px + RIGHT_X_OFFSET, py + 5);
+                DrawCraftingTab(contentX, contentY + 42f, contentW, contentH - 48f);
 
             if (_dragging && e.type == EventType.Repaint)
             {
@@ -162,24 +168,25 @@ namespace ExtractionDeadIsles.UI
             }
         }
 
-        private void DrawTabs(float x, float y)
+        private void DrawTabs(float x, float y, float width)
         {
+            float tabW = Mathf.Min(160f, (width - 8f) * 0.5f);
             GUI.color = _tab == 0 ? Color.cyan : Color.white;
-            if (GUI.Button(new Rect(x, y, 120, 28), "Storage")) _tab = 0;
+            if (GUI.Button(new Rect(x, y, tabW, 32f), "Inventory")) _tab = 0;
             GUI.color = _tab == 1 ? Color.cyan : Color.white;
-            if (GUI.Button(new Rect(x + 125, y, 120, 28), "Crafting")) _tab = 1;
+            if (GUI.Button(new Rect(x + tabW + 8f, y, tabW, 32f), "Crafting")) _tab = 1;
             GUI.color = Color.white;
         }
 
-        private void DrawStorageTab(float x, float y)
+        private void DrawStorageTab(float x, float y, float width, float height)
         {
             var grid = inventory.SpatialGrid;
-            GUI.Label(new Rect(x, y, LEFT_W, 20), $"<b>Backpack</b> ({grid.Width}x{grid.Height})");
-            y += 22;
+            GUI.Label(new Rect(x, y, width, 22f), $"<b>Backpack Inventory</b> ({grid.Width}x{grid.Height})");
+            y += 26f;
             DrawGrid(x, y, grid);
-            y += grid.Height * STEP + 8;
-            GUI.Label(new Rect(x, y, LEFT_W, 20), "<b>Pockets / Hotbar</b>");
-            y += 22;
+            y += Mathf.Max(grid.Height * STEP + 18f, height - 110f);
+            GUI.Label(new Rect(x, y, width, 22f), "<b>Pockets / Hotbar</b> — keys 1 to 6");
+            y += 24f;
             DrawPocketSlots(x, y);
         }
 
@@ -277,24 +284,28 @@ namespace ExtractionDeadIsles.UI
             var e = Event.current;
             for (int i = 0; i < inventory.PocketsHotbar.Count; i++)
             {
-                var slotRect = new Rect(ox + i * STEP, oy, CELL, CELL);
+                var slotRect = new Rect(ox + i * STEP, oy, CELL, CELL + 18f);
+                var itemRect = new Rect(slotRect.x, slotRect.y + 16f, CELL, CELL);
                 var slot = inventory.PocketsHotbar[i];
                 bool isHovered = slotRect.Contains(e.mousePosition);
+
+                GUI.color = Color.white;
+                GUI.Label(new Rect(slotRect.x, slotRect.y, CELL, 16f), $"[{i + 1}]");
 
                 if (slot.HasItem)
                 {
                     GUI.color = new Color(0.65f, 0.82f, 1f);
-                    GUI.Box(slotRect, $"{slot.Item.DisplayName}\nx{slot.Quantity}");
+                    GUI.Box(itemRect, $"{slot.Item.DisplayName}\nx{slot.Quantity}");
                 }
                 else if (_dragging && isHovered)
                 {
                     GUI.color = new Color(0.3f, 0.8f, 0.3f);
-                    GUI.Box(slotRect, "");
+                    GUI.Box(itemRect, "");
                 }
                 else
                 {
                     GUI.color = new Color(0.2f, 0.2f, 0.2f);
-                    GUI.Box(slotRect, $"[{i + 1}]");
+                    GUI.Box(itemRect, "");
                 }
                 GUI.color = Color.white;
 
@@ -323,74 +334,92 @@ namespace ExtractionDeadIsles.UI
             }
         }
 
-        private void DrawEquipmentPanel(float ox, float oy)
+        private void DrawEquipmentPanel(float ox, float oy, float width, float height)
         {
             var e = Event.current;
-            GUI.Label(new Rect(ox, oy, RIGHT_W, 20), "<b>Equipment</b>");
-            oy += 22;
+            GUI.Label(new Rect(ox, oy, width, 24f), "<b>Equipment</b>");
 
-            var slotTypes = (EquipmentSlotType[])System.Enum.GetValues(typeof(EquipmentSlotType));
-            foreach (var slotType in slotTypes)
+            var panelRect = new Rect(ox, oy + 28f, width, height - 28f);
+            GUI.Box(panelRect, "");
+
+            var silhouetteRect = new Rect(ox + 92f, oy + 56f, 170f, height - 120f);
+            DrawBodySilhouette(silhouetteRect);
+
+            DrawEquipmentSlot(EquipmentSlotType.Head,     new Rect(ox + 120f, oy + 40f, 120f, 48f), "Head", e);
+            DrawEquipmentSlot(EquipmentSlotType.Weapon1,  new Rect(ox + 12f,  oy + 140f, 120f, 48f), "Weapon 1", e);
+            DrawEquipmentSlot(EquipmentSlotType.Weapon2,  new Rect(ox + 228f, oy + 140f, 120f, 48f), "Weapon 2", e);
+            DrawEquipmentSlot(EquipmentSlotType.Torso,    new Rect(ox + 120f, oy + 188f, 120f, 48f), "Torso", e);
+            DrawEquipmentSlot(EquipmentSlotType.Backpack, new Rect(ox + 120f, oy + 246f, 120f, 48f), "Backpack", e);
+            DrawEquipmentSlot(EquipmentSlotType.Legs,     new Rect(ox + 120f, oy + 304f, 120f, 48f), "Legs", e);
+        }
+
+        private void DrawBodySilhouette(Rect rect)
+        {
+            GUI.color = new Color(0.15f, 0.18f, 0.22f, 0.9f);
+            GUI.Box(new Rect(rect.x + 56f, rect.y + 8f, 58f, 52f), "");
+            GUI.Box(new Rect(rect.x + 42f, rect.y + 66f, 86f, 108f), "");
+            GUI.Box(new Rect(rect.x + 16f, rect.y + 74f, 24f, 92f), "");
+            GUI.Box(new Rect(rect.x + 130f, rect.y + 74f, 24f, 92f), "");
+            GUI.Box(new Rect(rect.x + 50f, rect.y + 182f, 28f, 114f), "");
+            GUI.Box(new Rect(rect.x + 92f, rect.y + 182f, 28f, 114f), "");
+            GUI.color = Color.white;
+        }
+
+        private void DrawEquipmentSlot(EquipmentSlotType slotType, Rect slotRect, string label, Event e)
+        {
+            var equip = inventory.GetEquipmentSlot(slotType);
+            if (equip == null) return;
+
+            bool isHovered = slotRect.Contains(e.mousePosition);
+            string content = equip.HasItem ? equip.Item.DisplayName : "Empty";
+            string boxText = $"{label}\n{content}";
+
+            if (equip.HasItem)
+                GUI.color = new Color(0.9f, 0.75f, 1f);
+            else if (_dragging && isHovered && _dragItem != null)
             {
-                var equip = inventory.GetEquipmentSlot(slotType);
-                if (equip == null) { oy += STEP; continue; }
+                bool acceptable = _dragItem.IsCompatibleWithEquipmentSlot(slotType);
+                GUI.color = acceptable ? new Color(0.3f, 0.8f, 0.3f) : new Color(0.8f, 0.3f, 0.3f);
+            }
+            else
+                GUI.color = new Color(0.25f, 0.2f, 0.3f);
 
-                var slotRect = new Rect(ox, oy, RIGHT_W - 10, CELL);
-                bool isHovered = slotRect.Contains(e.mousePosition);
-                string content = equip.HasItem ? equip.Item.DisplayName : "Empty";
-                string label   = $"{slotType}: {content}";
+            GUI.Box(slotRect, boxText);
+            GUI.color = Color.white;
 
-                if (equip.HasItem)
-                    GUI.color = new Color(0.9f, 0.75f, 1f);
-                else if (_dragging && isHovered && _dragItem != null)
-                {
-                    bool acceptable = _dragItem.IsCompatibleWithEquipmentSlot(slotType);
-                    GUI.color = acceptable ? new Color(0.3f, 0.8f, 0.3f) : new Color(0.8f, 0.3f, 0.3f);
-                }
-                else
-                    GUI.color = new Color(0.25f, 0.2f, 0.3f);
+            if (!isHovered) return;
 
-                GUI.Box(slotRect, label);
-                GUI.color = Color.white;
+            if (e.type == EventType.MouseDown && e.button == 0 && !_dragging && equip.HasItem)
+            {
+                StartDragFromEquipment(slotType);
+                e.Use();
+                return;
+            }
 
-                if (isHovered)
-                {
-                    if (e.type == EventType.MouseDown && e.button == 0 && !_dragging && equip.HasItem)
-                    {
-                        StartDragFromEquipment(slotType);
-                        e.Use();
-                        return;
-                    }
+            if (e.type == EventType.MouseDown && e.button == 1 && !_dragging && equip.HasItem)
+            {
+                ShowCtxEquip(equip.Item, 1, slotType);
+                e.Use();
+                return;
+            }
 
-                    if (e.type == EventType.MouseDown && e.button == 1 && !_dragging && equip.HasItem)
-                    {
-                        ShowCtxEquip(equip.Item, 1, slotType);
-                        e.Use();
-                        return;
-                    }
-
-                    if (e.type == EventType.MouseUp && e.button == 0 && _dragging)
-                    {
-                        CompleteDragToEquipment(slotType);
-                        e.Use();
-                        return;
-                    }
-                }
-
-                oy += STEP;
+            if (e.type == EventType.MouseUp && e.button == 0 && _dragging)
+            {
+                CompleteDragToEquipment(slotType);
+                e.Use();
             }
         }
 
-        private void DrawCraftingTab(float x, float y)
+        private void DrawCraftingTab(float x, float y, float width, float height)
         {
             if (crafter == null)
             {
-                GUI.Label(new Rect(x, y, LEFT_W, 20), "No crafter");
+                GUI.Label(new Rect(x, y, width, 20), "No crafter");
                 return;
             }
 
             bool nearFire = campfireTracker != null && campfireTracker.IsNearCampfire;
-            GUI.Label(new Rect(x, y, LEFT_W, 20),
+            GUI.Label(new Rect(x, y, width, 20),
                 $"<b>Crafting</b>{(nearFire ? " (near campfire)" : "")}");
             y += 24;
 
@@ -408,23 +437,25 @@ namespace ExtractionDeadIsles.UI
                     }
                 }
 
-                float rowH = 52f;
-                var rowRect = new Rect(x, y, LEFT_W - 10, rowH);
+                float rowH = 56f;
+                var rowRect = new Rect(x, y, width - 10f, rowH);
 
                 GUI.color = canCraft ? new Color(0.8f, 1f, 0.8f) : new Color(0.4f, 0.4f, 0.4f);
                 GUI.Box(rowRect, "");
                 GUI.color = Color.white;
 
                 string placeTag = recipe.OutputItem != null && recipe.OutputItem.IsPlaceable ? " [Placeable]" : "";
-                GUI.Label(new Rect(x + 4, y + 2,  260, 20), $"{recipe.DisplayName}{placeTag}");
-                GUI.Label(new Rect(x + 4, y + 22, 280, 20), ingList);
+                GUI.Label(new Rect(x + 6, y + 4, width - 120f, 20), $"{recipe.DisplayName}{placeTag}");
+                GUI.Label(new Rect(x + 6, y + 24, width - 120f, 24), ingList);
 
                 GUI.enabled = canCraft;
-                if (GUI.Button(new Rect(x + LEFT_W - 95, y + 10, 85, 30), "Craft"))
+                if (GUI.Button(new Rect(x + width - 102f, y + 12, 88, 30), "Craft"))
                     crafter.TryCraft(recipe, nearFire);
                 GUI.enabled = true;
 
-                y += rowH + 4;
+                y += rowH + 6f;
+                if (y > _panelRect.yMax - 80f)
+                    break;
             }
         }
 

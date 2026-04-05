@@ -18,10 +18,10 @@ namespace ExtractionDeadIsles.Crafting
             if (recipe == null || inventory == null || recipe.OutputItem == null) return false;
             if (recipe.RequiresCampfire && !nearCampfire) return false;
 
-            // Placeables go directly to placement, not inventory — skip CanAddItem check
+            // Placeables go directly to placement, not inventory — skip storage/equip capacity check
             if (!recipe.OutputItem.IsPlaceable)
             {
-                if (!inventory.CanAddItem(recipe.OutputItem, recipe.OutputAmount)) return false;
+                if (!inventory.CanReceiveCraftedItem(recipe.OutputItem, recipe.OutputAmount)) return false;
             }
 
             foreach (var ingredient in recipe.Ingredients)
@@ -47,14 +47,14 @@ namespace ExtractionDeadIsles.Crafting
                 return true;
             }
 
-            if (!inventory.TryAddItem(recipe.OutputItem, recipe.OutputAmount))
+            if (!inventory.TryReceiveCraftedItem(recipe.OutputItem, recipe.OutputAmount, out var result))
             {
                 foreach (var ingredient in recipe.Ingredients)
                     inventory.TryAddItem(ingredient.item, ingredient.amount);
                 return false;
             }
 
-            Debug.Log($"[PlayerCrafter] Crafted {recipe.OutputItem.DisplayName} x{recipe.OutputAmount}");
+            Debug.Log($"[PlayerCrafter] {result} x{recipe.OutputAmount}");
             return true;
         }
 
