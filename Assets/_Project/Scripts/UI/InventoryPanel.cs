@@ -49,6 +49,8 @@ namespace ExtractionDeadIsles.UI
         bool _ctxOpen;
         Rect _ctxRect;
         ItemDefinition _ctxItem;
+        ItemDefinition _tooltipItem;
+        Rect _tooltipAnchor;
         int _ctxQty;
         InventoryDomain _ctxDomain;
         int _ctxPocket;
@@ -107,6 +109,8 @@ namespace ExtractionDeadIsles.UI
         {
             if (!_visible || inventory == null) return;
             var e = Event.current;
+            _tooltipItem = null;
+            _tooltipAnchor = default;
 
             _panelRect = new Rect(
                 PANEL_MARGIN_X,
@@ -166,6 +170,9 @@ namespace ExtractionDeadIsles.UI
 
             if (_ctxOpen)
                 DrawContextMenu(e);
+
+            if (_tooltipItem != null && !_ctxOpen && !_dragging)
+                DrawTooltip(e.mousePosition);
 
             if (e.type == EventType.MouseUp && e.button == 0 && _dragging)
             {
@@ -264,9 +271,7 @@ namespace ExtractionDeadIsles.UI
                 float iw = pi.EffectiveWidth  * STEP - GAP;
                 float ih = pi.EffectiveHeight * STEP - GAP;
                 var itemRect = new Rect(ox + pi.x * STEP, oy + pi.y * STEP, iw, ih);
-                GUI.color = new Color(0.65f, 0.82f, 1f);
-                GUI.Box(itemRect, $"{pi.item.DisplayName}\nx{pi.quantity}");
-                GUI.color = Color.white;
+                DrawItemCard(itemRect, pi.item, pi.quantity, new Color(0.65f, 0.82f, 1f), compactText: false);
             }
 
             // Pass 3 — input handling
@@ -277,6 +282,9 @@ namespace ExtractionDeadIsles.UI
                     var cellRect = new Rect(ox + col * STEP, oy + row * STEP, CELL, CELL);
                     if (!cellRect.Contains(e.mousePosition)) continue;
                     var pi = grid.GetItemAt(col, row);
+
+                    if (pi != null)
+                        SetTooltip(pi.item, cellRect);
 
                     if (e.type == EventType.MouseDown && e.button == 0 && !_dragging && pi != null)
                     {
@@ -319,8 +327,9 @@ namespace ExtractionDeadIsles.UI
 
                 if (slot.HasItem)
                 {
-                    GUI.color = new Color(0.65f, 0.82f, 1f);
-                    GUI.Box(itemRect, $"{slot.Item.DisplayName}\nx{slot.Quantity}");
+                    DrawItemCard(itemRect, slot.Item, slot.Quantity, new Color(0.65f, 0.82f, 1f), compactText: true);
+                    if (isHovered)
+                        SetTooltip(slot.Item, itemRect);
                 }
                 else if (_dragging && isHovered)
                 {
@@ -412,7 +421,7 @@ namespace ExtractionDeadIsles.UI
 
             bool isHovered = slotRect.Contains(e.mousePosition);
             string content = equip.HasItem ? equip.Item.DisplayName : "Empty";
-            string boxText = $"{label}\n{content}";
+            string boxText = equip.HasItem ? label : $"{label}\n{content}";
 
             if (equip.HasItem)
                 GUI.color = new Color(0.9f, 0.75f, 1f);
@@ -426,6 +435,15 @@ namespace ExtractionDeadIsles.UI
 
             GUI.Box(slotRect, boxText);
             GUI.color = Color.white;
+
+            if (equip.HasItem)
+            {
+                DrawSlotIcon(slotRect, equip.Item.Icon);
+                DrawQuantityBadge(slotRect, 1);
+            }
+
+            if (isHovered && equip.HasItem)
+                SetTooltip(equip.Item, slotRect);
 
             if (!isHovered) return;
 
@@ -448,6 +466,78 @@ namespace ExtractionDeadIsles.UI
                 CompleteDragToEquipment(slotType);
                 e.Use();
             }
+        }
+
+        private void DrawItemCard(Rect rect, ItemDefinition item, int quantity, Color tint, bool compactText)
+        {
+            GUI.color = tint;
+            GUI.Box(rect, "");
+            GUI.color = Color.white;
+
+            DrawSlotIcon(rect, item != null ? item.Icon : null);
+            DrawQuantityBadge(rect, quantity);
+
+            if (item == null)
+                return;
+
+            if (item.Icon == null)
+            {
+                float labelY = compactText ? rect.y + 4f : rect.y + 6f;
+                float labelH = compactText ? rect.height - 18f : rect.height - 22f;
+                GUI.Label(new Rect(rect.x + 4f, labelY, rect.width - 8f, labelH), compactText ? item.DisplayName : $"{item.DisplayName}\nx{quantity}");
+            }
+        }
+
+        private void DrawSlotIcon(Rect rect, Sprite icon)
+        {
+            if (icon == null) return;
+
+            var texture = icon.texture;
+            if (texture == null) return;
+
+            Rect uv = icon.textureRect;
+            uv = new Rect(uv.x / texture.width, uv.y / texture.height, uv.width / texture.width, uv.height / texture.height);
+            var iconRect = new Rect(rect.x + 6f, rect.y + 6f, rect.width - 12f, rect.height - 12f);
+            GUI.DrawTextureWithTexCoords(iconRect, texture, uv, true);
+        }
+
+        private void DrawQuantityBadge(Rect rect, int quantity)
+        {
+            if (quantity <= 1) return;
+            GUI.Label(new Rect(rect.x + 4f, rect.yMax - 18f, rect.width - 8f, 16f), $"x{quantity}");
+        }
+
+        private void SetTooltip(ItemDefinition item, Rect anchor)
+        {
+            if (item == null) return;
+            _tooltipItem = item;
+            _tooltipAnchor = anchor;
+        }
+
+        private void DrawTooltip(Vector2 mousePosition)
+        {
+            if (_tooltipItem == null) return;
+
+            string description = !string.IsNullOrWhiteSpace(_tooltipItem.ShortDescription)
+                ? _tooltipItem.ShortDescription
+                : $"Category: {_tooltipItem.Category}";
+            string details = _tooltipItem.Stackable
+                ? $"Stack: 1-{_tooltipItem.MaxStack}"
+                : "Non-stackable";
+            string tooltipText = $"<b>{_tooltipItem.DisplayName}</b>\n{description}\n{details}";
+
+            float width = 260f;
+            float height = 74f;
+            float x = Mathf.Min(mousePosition.x + 18f, Screen.width - width - 8f);
+            float y = mousePosition.y - height - 8f;
+            if (y < 8f)
+                y = Mathf.Min(_tooltipAnchor.yMax + 8f, Screen.height - height - 8f);
+
+            var rect = new Rect(x, y, width, height);
+            GUI.color = new Color(0.08f, 0.08f, 0.1f, 0.96f);
+            GUI.Box(rect, "");
+            GUI.color = Color.white;
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 8f, rect.width - 16f, rect.height - 16f), tooltipText);
         }
 
         private void DrawCraftingTab(float x, float y, float width, float height)
@@ -485,8 +575,12 @@ namespace ExtractionDeadIsles.UI
                 GUI.color = Color.white;
 
                 string placeTag = recipe.OutputItem != null && recipe.OutputItem.IsPlaceable ? " [Placeable]" : "";
-                GUI.Label(new Rect(x + 6, y + 4, width - 120f, 20), $"{recipe.DisplayName}{placeTag}");
-                GUI.Label(new Rect(x + 6, y + 24, width - 120f, 24), ingList);
+                var recipeIconRect = new Rect(x + 8f, y + 8f, 40f, 40f);
+                DrawSlotIcon(recipeIconRect, recipe.OutputItem != null ? recipe.OutputItem.Icon : null);
+                if (recipe.OutputItem != null && recipeIconRect.Contains(Event.current.mousePosition))
+                    SetTooltip(recipe.OutputItem, recipeIconRect);
+                GUI.Label(new Rect(x + 54f, y + 4, width - 168f, 20), $"{recipe.DisplayName}{placeTag}");
+                GUI.Label(new Rect(x + 54f, y + 24, width - 168f, 24), ingList);
 
                 GUI.enabled = canCraft;
                 if (GUI.Button(new Rect(x + width - 102f, y + 12, 88, 30), "Craft"))

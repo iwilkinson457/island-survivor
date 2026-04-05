@@ -8,6 +8,8 @@ namespace ExtractionDeadIsles.Items
     {
         [SerializeField] private string itemId;
         [SerializeField] private string displayName;
+        [TextArea(2, 4)] [SerializeField] private string shortDescription;
+        [SerializeField] private Sprite icon;
         [SerializeField] private ItemCategory category;
         [SerializeField] private bool stackable = true;
         [SerializeField] private int maxStack = 20;
@@ -33,6 +35,8 @@ namespace ExtractionDeadIsles.Items
 
         public string ItemId => itemId;
         public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
+        public string ShortDescription => shortDescription;
+        public Sprite Icon => icon;
         public ItemCategory Category => category;
         public bool Stackable => stackable;
         public int MaxStack => maxStack;
