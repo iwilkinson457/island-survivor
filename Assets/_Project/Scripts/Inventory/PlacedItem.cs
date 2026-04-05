@@ -2,36 +2,29 @@ using ExtractionDeadIsles.Items;
 
 namespace ExtractionDeadIsles.Inventory
 {
-    /// <summary>
-    /// Represents an item occupying one or more cells in a <see cref="BackpackGrid"/>.
-    /// Instances are created and owned by BackpackGrid; do not create directly.
-    /// </summary>
     public class PlacedItem
     {
-        /// <summary>The item definition placed in the grid.</summary>
-        public ItemDefinition Item { get; }
+        public ItemDefinition item;
+        public int quantity;
+        public int x, y;
+        public bool rotated;
 
-        /// <summary>Top-left column of the item's footprint.</summary>
-        public int X { get; internal set; }
+        public int EffectiveWidth  => rotated ? item.GridHeight : item.GridWidth;
+        public int EffectiveHeight => rotated ? item.GridWidth  : item.GridHeight;
 
-        /// <summary>Top-left row of the item's footprint.</summary>
-        public int Y { get; internal set; }
+        // Legacy property aliases used by BackpackGrid internals
+        public ItemDefinition Item    => item;
+        public int X                  { get { return x; } internal set { x = value; } }
+        public int Y                  { get { return y; } internal set { y = value; } }
+        public bool Rotated           { get { return rotated; } internal set { rotated = value; } }
 
-        /// <summary>Whether the item's footprint is rotated 90 degrees (width/height swapped).</summary>
-        public bool Rotated { get; internal set; }
-
-        /// <summary>Effective width in grid cells (accounts for rotation).</summary>
-        public int EffectiveWidth  => Rotated ? Item.GridHeight : Item.GridWidth;
-
-        /// <summary>Effective height in grid cells (accounts for rotation).</summary>
-        public int EffectiveHeight => Rotated ? Item.GridWidth  : Item.GridHeight;
-
-        internal PlacedItem(ItemDefinition item, int x, int y, bool rotated)
+        public PlacedItem(ItemDefinition itemDef, int col, int row, bool isRotated, int qty = 1)
         {
-            Item    = item;
-            X       = x;
-            Y       = y;
-            Rotated = rotated;
+            item     = itemDef;
+            x        = col;
+            y        = row;
+            rotated  = isRotated;
+            quantity = qty;
         }
     }
 }

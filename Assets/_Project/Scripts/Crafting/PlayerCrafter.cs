@@ -9,13 +9,20 @@ namespace ExtractionDeadIsles.Crafting
         [SerializeField] private List<CraftingRecipe> defaultRecipes = new();
         [SerializeField] private PlayerInventory inventory;
 
+        public event System.Action<Items.ItemDefinition> OnCraftedPlaceable;
+
         public IReadOnlyList<CraftingRecipe> GetRecipes() => defaultRecipes;
 
         public bool CanCraft(CraftingRecipe recipe, bool nearCampfire)
         {
             if (recipe == null || inventory == null || recipe.OutputItem == null) return false;
             if (recipe.RequiresCampfire && !nearCampfire) return false;
-            if (!inventory.CanAddItem(recipe.OutputItem, recipe.OutputAmount)) return false;
+
+            // Placeables go directly to placement, not inventory — skip CanAddItem check
+            if (!recipe.OutputItem.IsPlaceable)
+            {
+                if (!inventory.CanAddItem(recipe.OutputItem, recipe.OutputAmount)) return false;
+            }
 
             foreach (var ingredient in recipe.Ingredients)
             {
@@ -32,6 +39,13 @@ namespace ExtractionDeadIsles.Crafting
 
             foreach (var ingredient in recipe.Ingredients)
                 inventory.RemoveItems(ingredient.item, ingredient.amount);
+
+            if (recipe.OutputItem.IsPlaceable)
+            {
+                Debug.Log($"[PlayerCrafter] Crafted placeable {recipe.OutputItem.DisplayName} — entering placement mode.");
+                OnCraftedPlaceable?.Invoke(recipe.OutputItem);
+                return true;
+            }
 
             if (!inventory.TryAddItem(recipe.OutputItem, recipe.OutputAmount))
             {

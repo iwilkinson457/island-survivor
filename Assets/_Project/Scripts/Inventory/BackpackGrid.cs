@@ -1,213 +1,308 @@
-using System;
 using System.Collections.Generic;
+using UnityEngine;
 using ExtractionDeadIsles.Items;
 
 namespace ExtractionDeadIsles.Inventory
 {
-    /// <summary>
-    /// 2D spatial occupancy grid for backpack storage.
-    ///
-    /// Supports multi-cell items, fit checks, rotation, and atomic place/remove.
-    /// All mutating operations are atomic: if a placement cannot succeed the grid is
-    /// left unchanged (safe-reject guarantee).
-    /// </summary>
     public class BackpackGrid
     {
-        // ----------------------------------------------------------------
-        // Dimensions
-        // ----------------------------------------------------------------
+        private int _width, _height;
+        private PlacedItem[,] _occupancy;
+        private List<PlacedItem> _items;
 
-        /// <summary>Current grid width in cells.</summary>
-        public int Width  { get; private set; }
-
-        /// <summary>Current grid height in cells.</summary>
-        public int Height { get; private set; }
-
-        // ----------------------------------------------------------------
-        // Internal state
-        // ----------------------------------------------------------------
-
-        // _cells[col, row]: null = empty, non-null = PlacedItem that occupies this cell
-        private PlacedItem[,] _cells;
-
-        // Canonical list of all items currently placed in this grid
-        private readonly List<PlacedItem> _placedItems = new List<PlacedItem>();
-
-        /// <summary>All items currently placed in the grid (read-only view).</summary>
-        public IReadOnlyList<PlacedItem> PlacedItems => _placedItems;
-
-        // ----------------------------------------------------------------
-        // Construction
-        // ----------------------------------------------------------------
+        public int Width  => _width;
+        public int Height => _height;
 
         public BackpackGrid(int width, int height)
         {
-            if (width  < 1) throw new ArgumentOutOfRangeException(nameof(width));
-            if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
-            Width  = width;
-            Height = height;
-            _cells = new PlacedItem[width, height];
+            Resize(width, height);
         }
 
-        // ----------------------------------------------------------------
-        // Fit check
-        // ----------------------------------------------------------------
+        public void Resize(int width, int height)
+        {
+            _width  = Mathf.Max(1, width);
+            _height = Mathf.Max(1, height);
+            _occupancy = new PlacedItem[_width, _height];
+            _items = new List<PlacedItem>();
+        }
 
-        /// <summary>
-        /// Returns true if the item's footprint (possibly rotated) fits at (x, y) without
-        /// going out of bounds or overlapping an occupied cell.
-        ///
-        /// Pass <paramref name="exclude"/> to treat that item's current cells as empty —
-        /// useful when checking whether an already-placed item can move to a new position.
-        /// </summary>
-        public bool CanPlace(ItemDefinition item, int x, int y, bool rotated = false, PlacedItem exclude = null)
+        public List<PlacedItem> SimulateResize(int newW, int newH)
+        {
+            var temp = new BackpackGrid(newW, newH);
+            var overflow = new List<PlacedItem>();
+            foreach (var pi in _items)
+            {
+                if (!temp.TryPlaceFirstFit(pi.item, pi.quantity, pi.rotated))
+                    overflow.Add(pi);
+            }
+            return overflow;
+        }
+
+        public List<PlacedItem> ResizeWithItems(int newW, int newH)
+        {
+            var oldItems = new List<PlacedItem>(_items);
+            Resize(newW, newH);
+            var overflow = new List<PlacedItem>();
+            foreach (var pi in oldItems)
+            {
+                if (!TryPlaceFirstFit(pi.item, pi.quantity, pi.rotated))
+                    overflow.Add(pi);
+            }
+            return overflow;
+        }
+
+        public bool CanPlace(ItemDefinition item, int x, int y, bool rotated)
         {
             if (item == null) return false;
             int w = rotated ? item.GridHeight : item.GridWidth;
             int h = rotated ? item.GridWidth  : item.GridHeight;
-            return FitsAt(x, y, w, h, exclude);
+            if (x < 0 || y < 0) return false;
+            if (x + w > _width || y + h > _height) return false;
+            for (int cx = x; cx < x + w; cx++)
+                for (int cy = y; cy < y + h; cy++)
+                    if (_occupancy[cx, cy] != null) return false;
+            return true;
         }
 
-        private bool FitsAt(int x, int y, int w, int h, PlacedItem exclude)
+        private void DoPlace(ItemDefinition item, int x, int y, bool isRotated, int quantity)
         {
-            if (x < 0 || y < 0)              return false;
-            if (x + w > Width)               return false;
-            if (y + h > Height)              return false;
-
+            var pi = new PlacedItem(item, x, y, isRotated, quantity);
+            _items.Add(pi);
+            int w = pi.EffectiveWidth;
+            int h = pi.EffectiveHeight;
             for (int cx = x; cx < x + w; cx++)
-            {
                 for (int cy = y; cy < y + h; cy++)
+                    _occupancy[cx, cy] = pi;
+        }
+
+        public bool TryPlace(ItemDefinition item, int x, int y, bool isRotated, int quantity)
+        {
+            if (!CanPlace(item, x, y, isRotated)) return false;
+            DoPlace(item, x, y, isRotated, quantity);
+            return true;
+        }
+
+        public int TryMergeAmount(ItemDefinition item, int amount)
+        {
+            if (item == null || !item.Stackable || amount <= 0) return 0;
+            int merged = 0;
+            foreach (var pi in _items)
+            {
+                if (merged >= amount) break;
+                if (pi.item != item) continue;
+                int space = item.MaxStack - pi.quantity;
+                if (space <= 0) continue;
+                int take = Mathf.Min(space, amount - merged);
+                pi.quantity += take;
+                merged += take;
+            }
+            return merged;
+        }
+
+        public bool TryPlaceFirstFit(ItemDefinition item, int quantity, bool preferRotated = false)
+        {
+            if (item == null || quantity <= 0) return false;
+            int remaining = quantity;
+            int stackSize = item.Stackable ? item.MaxStack : 1;
+
+            while (remaining > 0)
+            {
+                int placedQty = Mathf.Min(remaining, stackSize);
+                bool placed = false;
+
+                bool[] orientations = preferRotated && item.Rotatable
+                    ? new[] { true, false }
+                    : new[] { false, true };
+
+                foreach (bool rot in orientations)
                 {
-                    var occupant = _cells[cx, cy];
-                    if (occupant != null && occupant != exclude)
-                        return false;
+                    if (rot && !item.Rotatable) continue;
+                    int w = rot ? item.GridHeight : item.GridWidth;
+                    int h = rot ? item.GridWidth  : item.GridHeight;
+                    bool found = false;
+                    int foundX = 0, foundY = 0;
+                    for (int row = 0; row <= _height - h && !found; row++)
+                    {
+                        for (int col = 0; col <= _width - w && !found; col++)
+                        {
+                            if (CanPlace(item, col, row, rot))
+                            {
+                                foundX = col; foundY = row;
+                                found = true;
+                            }
+                        }
+                    }
+                    if (found)
+                    {
+                        DoPlace(item, foundX, foundY, rot, placedQty);
+                        remaining -= placedQty;
+                        placed = true;
+                        break;
+                    }
                 }
+
+                if (!placed) return false;
             }
             return true;
         }
 
-        // ----------------------------------------------------------------
-        // Place
-        // ----------------------------------------------------------------
-
-        /// <summary>
-        /// Atomically places an item at (x, y).
-        /// Returns the new <see cref="PlacedItem"/> on success, or null if the fit check fails.
-        /// The grid is never partially modified on failure.
-        /// </summary>
-        public PlacedItem TryPlace(ItemDefinition item, int x, int y, bool rotated = false)
+        public PlacedItem GetItemAt(int x, int y)
         {
-            if (!CanPlace(item, x, y, rotated)) return null;
-
-            int w = rotated ? item.GridHeight : item.GridWidth;
-            int h = rotated ? item.GridWidth  : item.GridHeight;
-
-            var placed = new PlacedItem(item, x, y, rotated);
-            _placedItems.Add(placed);
-            WriteCells(placed, x, y, w, h);
-            return placed;
+            if (x < 0 || x >= _width || y < 0 || y >= _height) return null;
+            return _occupancy[x, y];
         }
 
-        private void WriteCells(PlacedItem placed, int x, int y, int w, int h)
+        public bool RemovePlaced(PlacedItem pi)
         {
-            for (int cx = x; cx < x + w; cx++)
-                for (int cy = y; cy < y + h; cy++)
-                    _cells[cx, cy] = placed;
-        }
-
-        // ----------------------------------------------------------------
-        // Remove
-        // ----------------------------------------------------------------
-
-        /// <summary>
-        /// Removes a placed item from the grid and clears all cells it occupied.
-        /// Returns false if <paramref name="placed"/> is not found in this grid.
-        /// </summary>
-        public bool TryRemove(PlacedItem placed)
-        {
-            if (placed == null) return false;
-            if (!_placedItems.Remove(placed)) return false;
-            EraseCells(placed);
+            if (pi == null) return false;
+            if (!_items.Remove(pi)) return false;
+            for (int cx = 0; cx < _width; cx++)
+                for (int cy = 0; cy < _height; cy++)
+                    if (_occupancy[cx, cy] == pi) _occupancy[cx, cy] = null;
             return true;
         }
 
-        private void EraseCells(PlacedItem placed)
+        public PlacedItem RemoveItemAt(int x, int y)
         {
-            int w = placed.EffectiveWidth;
-            int h = placed.EffectiveHeight;
-            for (int cx = placed.X; cx < placed.X + w; cx++)
-                for (int cy = placed.Y; cy < placed.Y + h; cy++)
-                    if (_cells[cx, cy] == placed)
-                        _cells[cx, cy] = null;
+            var pi = GetItemAt(x, y);
+            if (pi == null) return null;
+            RemovePlaced(pi);
+            return pi;
         }
 
-        // ----------------------------------------------------------------
-        // Move (same grid, new position/rotation)
-        // ----------------------------------------------------------------
-
-        /// <summary>
-        /// Moves an already-placed item to a new (x, y) position with a potentially
-        /// different rotation.  The move is atomic: on failure the item stays where it was.
-        /// Returns false if the new position fails the fit check.
-        /// </summary>
-        public bool TryMove(PlacedItem placed, int newX, int newY, bool newRotated)
+        public bool RemoveAmount(ItemDefinition item, int amount)
         {
-            if (placed == null || !_placedItems.Contains(placed)) return false;
+            if (item == null || amount <= 0) return false;
+            if (CountItem(item) < amount) return false;
+            int remaining = amount;
+            var toRemove = new List<PlacedItem>();
+            foreach (var pi in _items)
+            {
+                if (remaining <= 0) break;
+                if (pi.item != item) continue;
+                int take = Mathf.Min(remaining, pi.quantity);
+                pi.quantity -= take;
+                remaining -= take;
+                if (pi.quantity <= 0) toRemove.Add(pi);
+            }
+            foreach (var pi in toRemove)
+                RemovePlaced(pi);
+            return remaining <= 0;
+        }
 
-            // Fit check ignoring the item's own current cells
-            if (!CanPlace(placed.Item, newX, newY, newRotated, exclude: placed)) return false;
+        public int CountItem(ItemDefinition item)
+        {
+            if (item == null) return 0;
+            int total = 0;
+            foreach (var pi in _items)
+                if (pi.item == item) total += pi.quantity;
+            return total;
+        }
 
-            // Erase old cells
-            EraseCells(placed);
+        public bool CanFitAmount(ItemDefinition item, int amount)
+        {
+            if (item == null || amount <= 0) return true;
+            int remaining = amount;
 
-            // Update position
-            placed.X       = newX;
-            placed.Y       = newY;
-            placed.Rotated = newRotated;
+            if (item.Stackable)
+            {
+                foreach (var pi in _items)
+                {
+                    if (pi.item != item) continue;
+                    remaining -= (item.MaxStack - pi.quantity);
+                    if (remaining <= 0) return true;
+                }
+            }
 
-            // Write new cells
-            WriteCells(placed, newX, newY, placed.EffectiveWidth, placed.EffectiveHeight);
+            // Simulate placing new stacks
+            var tempOccupied = new bool[_width, _height];
+            foreach (var pi in _items)
+            {
+                int w = pi.EffectiveWidth;
+                int h = pi.EffectiveHeight;
+                for (int cx = pi.x; cx < pi.x + w; cx++)
+                    for (int cy = pi.y; cy < pi.y + h; cy++)
+                        tempOccupied[cx, cy] = true;
+            }
+
+            int stackSize = item.Stackable ? item.MaxStack : 1;
+            while (remaining > 0)
+            {
+                bool found = false;
+                int fw = item.GridWidth;
+                int fh = item.GridHeight;
+                for (int row = 0; row <= _height - fh && !found; row++)
+                {
+                    for (int col = 0; col <= _width - fw && !found; col++)
+                    {
+                        bool fits = true;
+                        for (int cx = col; cx < col + fw && fits; cx++)
+                            for (int cy = row; cy < row + fh && fits; cy++)
+                                if (tempOccupied[cx, cy]) fits = false;
+                        if (fits)
+                        {
+                            for (int cx = col; cx < col + fw; cx++)
+                                for (int cy = row; cy < row + fh; cy++)
+                                    tempOccupied[cx, cy] = true;
+                            remaining -= stackSize;
+                            found = true;
+                        }
+                    }
+                }
+                if (!found && item.Rotatable)
+                {
+                    int rw = item.GridHeight;
+                    int rh = item.GridWidth;
+                    if (rw != fw || rh != fh)
+                    {
+                        for (int row = 0; row <= _height - rh && !found; row++)
+                        {
+                            for (int col = 0; col <= _width - rw && !found; col++)
+                            {
+                                bool fits = true;
+                                for (int cx = col; cx < col + rw && fits; cx++)
+                                    for (int cy = row; cy < row + rh && fits; cy++)
+                                        if (tempOccupied[cx, cy]) fits = false;
+                                if (fits)
+                                {
+                                    for (int cx = col; cx < col + rw; cx++)
+                                        for (int cy = row; cy < row + rh; cy++)
+                                            tempOccupied[cx, cy] = true;
+                                    remaining -= stackSize;
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!found) return false;
+            }
             return true;
         }
 
-        // ----------------------------------------------------------------
-        // Query helpers
-        // ----------------------------------------------------------------
+        public IReadOnlyList<PlacedItem> GetAllPlaced() => _items;
 
-        /// <summary>Returns the <see cref="PlacedItem"/> occupying cell (col, row), or null if empty/OOB.</summary>
-        public PlacedItem GetAt(int col, int row)
+        public void Clear()
         {
-            if (col < 0 || col >= Width || row < 0 || row >= Height) return null;
-            return _cells[col, row];
+            _items.Clear();
+            _occupancy = new PlacedItem[_width, _height];
         }
 
-        /// <summary>Returns the first placed item matching the given definition, or null.</summary>
-        public PlacedItem Find(ItemDefinition item)
-        {
-            foreach (var p in _placedItems)
-                if (p.Item == item) return p;
-            return null;
-        }
-
-        /// <summary>
-        /// Scans left-to-right, top-to-bottom for the first (col, row) where the item's
-        /// footprint fits.  Returns false if no valid position exists.
-        /// </summary>
-        public bool TryFindFirstFit(ItemDefinition item, bool rotated, out int col, out int row)
+        // Legacy API compatibility
+        public PlacedItem GetAt(int col, int row) => GetItemAt(col, row);
+        public bool TryFindFirstFit(ItemDefinition item, bool rot, out int col, out int row)
         {
             col = 0; row = 0;
             if (item == null) return false;
-            int w = rotated ? item.GridHeight : item.GridWidth;
-            int h = rotated ? item.GridWidth  : item.GridHeight;
-
-            for (int r = 0; r <= Height - h; r++)
+            int w = rot ? item.GridHeight : item.GridWidth;
+            int h = rot ? item.GridWidth  : item.GridHeight;
+            for (int r = 0; r <= _height - h; r++)
             {
-                for (int c = 0; c <= Width - w; c++)
+                for (int c = 0; c <= _width - w; c++)
                 {
-                    if (FitsAt(c, r, w, h, null))
+                    if (CanPlace(item, c, r, rot))
                     {
-                        col = c;
-                        row = r;
+                        col = c; row = r;
                         return true;
                     }
                 }
@@ -215,50 +310,6 @@ namespace ExtractionDeadIsles.Inventory
             return false;
         }
 
-        // ----------------------------------------------------------------
-        // Resize (backpack swap)
-        // ----------------------------------------------------------------
-
-        /// <summary>
-        /// Attempts to resize the grid to new dimensions.
-        /// Returns false without modifying the grid if any currently placed item would
-        /// fall outside the new bounds (overflow-safe rejection).
-        /// </summary>
-        public bool TryResize(int newWidth, int newHeight)
-        {
-            if (newWidth < 1 || newHeight < 1) return false;
-
-            foreach (var p in _placedItems)
-            {
-                if (p.X + p.EffectiveWidth  > newWidth)  return false;
-                if (p.Y + p.EffectiveHeight > newHeight) return false;
-            }
-
-            var newCells = new PlacedItem[newWidth, newHeight];
-            foreach (var p in _placedItems)
-            {
-                int w = p.EffectiveWidth;
-                int h = p.EffectiveHeight;
-                for (int cx = p.X; cx < p.X + w; cx++)
-                    for (int cy = p.Y; cy < p.Y + h; cy++)
-                        newCells[cx, cy] = p;
-            }
-
-            Width  = newWidth;
-            Height = newHeight;
-            _cells = newCells;
-            return true;
-        }
-
-        // ----------------------------------------------------------------
-        // Clear
-        // ----------------------------------------------------------------
-
-        /// <summary>Removes all items from the grid.</summary>
-        public void Clear()
-        {
-            _placedItems.Clear();
-            _cells = new PlacedItem[Width, Height];
-        }
+        public IReadOnlyList<PlacedItem> PlacedItems => _items;
     }
 }

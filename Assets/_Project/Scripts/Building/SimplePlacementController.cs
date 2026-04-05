@@ -19,6 +19,9 @@ namespace ExtractionDeadIsles.Building
         private bool _placementMode;
         private int _selectedHotbarIndex;
 
+        private ItemDefinition _craftedItem;
+        private bool _placementFromCraft;
+
         public bool IsInPlacementMode => _placementMode;
         public int SelectedHotbarIndex => _selectedHotbarIndex;
 
@@ -94,6 +97,20 @@ namespace ExtractionDeadIsles.Building
             Debug.Log("[SimplePlacementController] Placement mode started.");
         }
 
+        public void BeginPlacementWithItem(ItemDefinition item)
+        {
+            if (item == null) return;
+            _craftedItem = item;
+            _placementFromCraft = true;
+            _placementMode = true;
+
+            if (_ghost == null)
+                _ghost = CreateGhost();
+
+            _ghost.gameObject.SetActive(true);
+            Debug.Log($"[SimplePlacementController] Craft-triggered placement started for {item.DisplayName}.");
+        }
+
         private PlacementGhost CreateGhost()
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -106,6 +123,15 @@ namespace ExtractionDeadIsles.Building
 
         private void ConfirmPlacement()
         {
+            if (_placementFromCraft)
+            {
+                SpawnCampfire(_ghost.LastPlacementPosition);
+                _craftedItem = null;
+                _placementFromCraft = false;
+                CancelPlacement();
+                return;
+            }
+
             if (!inventory.TryGetHotbarSlot(_selectedHotbarIndex, out var slot) || slot.Item != campfireKitItem)
             {
                 CancelPlacement();
@@ -147,6 +173,14 @@ namespace ExtractionDeadIsles.Building
             _placementMode = false;
             if (_ghost != null)
                 _ghost.gameObject.SetActive(false);
+
+            if (_placementFromCraft && _craftedItem != null)
+            {
+                inventory.TryAddItem(_craftedItem, 1);
+                inventory.NotifyChanged();
+                _craftedItem = null;
+                _placementFromCraft = false;
+            }
         }
     }
 }

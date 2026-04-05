@@ -8,50 +8,56 @@ namespace ExtractionDeadIsles.Inventory
 {
     public class PlayerInventory : MonoBehaviour
     {
-        [SerializeField] private int backpackGridCapacity = 20;
         [SerializeField] private int hotbarSize = 6;
 
         [Header("Spatial Backpack Grid")]
-        [SerializeField] private int backpackSpatialWidth  = 3;
-        [SerializeField] private int backpackSpatialHeight = 3;
+        [SerializeField] private int defaultGridWidth  = 3;
+        [SerializeField] private int defaultGridHeight = 3;
+        [SerializeField] private ItemDefinition starterBackpackItem;
 
-        // --- Domain: BackpackGrid (legacy flat-list, kept for prototype backward compat) ---
-        private List<InventorySlot> _backpackGrid;
+        // --- Domain: BackpackGrid (spatial) ---
+        private BackpackGrid _spatialGrid;
 
         // --- Domain: PocketsHotbar ---
         private List<InventorySlot> _pocketsHotbar;
-
-        // --- Domain: Spatial BackpackGrid ---
-        private BackpackGrid _spatialBackpack;
 
         // --- Domain: Equipment ---
         private EquipmentSlot[] _equipmentSlots;
 
         public event Action OnInventoryChanged;
 
-        // Domain-explicit properties
-        public IReadOnlyList<InventorySlot> BackpackGrid => _backpackGrid;
+        // Domain properties
+        public BackpackGrid SpatialGrid => _spatialGrid;
         public IReadOnlyList<InventorySlot> PocketsHotbar => _pocketsHotbar;
         public IReadOnlyList<EquipmentSlot> EquipmentSlots => _equipmentSlots;
-        public int BackpackGridCapacity => backpackGridCapacity;
         public int HotbarSize => hotbarSize;
 
-        /// <summary>The spatial 2D grid that backs the equipped backpack storage.</summary>
-        public BackpackGrid SpatialBackpack => _spatialBackpack;
-
-        // Legacy-compatible aliases (used by InventoryDebugPanel and other callers)
-        public IReadOnlyList<InventorySlot> Backpack => _backpackGrid;
+        // Legacy alias (InventoryDebugPanel uses Hotbar)
         public IReadOnlyList<InventorySlot> Hotbar => _pocketsHotbar;
-        public int BackpackSize => backpackGridCapacity;
+
+        // Legacy int property
+        public int BackpackGridCapacity => _spatialGrid != null ? _spatialGrid.Width * _spatialGrid.Height : 0;
 
         private void Awake()
         {
             _pocketsHotbar  = CreateSlots(hotbarSize);
-            _backpackGrid   = CreateSlots(backpackGridCapacity);
             _equipmentSlots = CreateEquipmentSlots();
-            _spatialBackpack = new BackpackGrid(
-                Mathf.Max(1, backpackSpatialWidth),
-                Mathf.Max(1, backpackSpatialHeight));
+
+            int gw = defaultGridWidth;
+            int gh = defaultGridHeight;
+
+            if (starterBackpackItem != null && starterBackpackItem.BackpackStorageWidth > 0)
+            {
+                var backpackSlot = GetEquipmentSlot(EquipmentSlotType.Backpack);
+                if (backpackSlot != null && backpackSlot.CanAccept(starterBackpackItem))
+                {
+                    backpackSlot.TryEquip(starterBackpackItem);
+                    gw = starterBackpackItem.BackpackStorageWidth;
+                    gh = starterBackpackItem.BackpackStorageHeight;
+                }
+            }
+
+            _spatialGrid = new BackpackGrid(Mathf.Max(1, gw), Mathf.Max(1, gh));
         }
 
         private List<InventorySlot> CreateSlots(int count)
@@ -83,11 +89,6 @@ namespace ExtractionDeadIsles.Inventory
             return null;
         }
 
-        /// <summary>
-        /// Equips an item into the specified equipment slot.
-        /// Returns false if the slot rejects the item (wrong type or already occupied).
-        /// Does NOT remove the item from storage — caller is responsible for that.
-        /// </summary>
         public bool TryEquipItem(ItemDefinition item, EquipmentSlotType slotType)
         {
             if (item == null) return false;
@@ -98,10 +99,6 @@ namespace ExtractionDeadIsles.Inventory
             return true;
         }
 
-        /// <summary>
-        /// Removes and returns the item in the given equipment slot, or null if empty.
-        /// Does NOT add the item back to storage — caller is responsible for that.
-        /// </summary>
         public ItemDefinition UnequipItem(EquipmentSlotType slotType)
         {
             var slot = GetEquipmentSlot(slotType);
@@ -111,89 +108,31 @@ namespace ExtractionDeadIsles.Inventory
             return item;
         }
 
-        // -------------------------------------------------------------------------
-        // Spatial BackpackGrid domain
-        // -------------------------------------------------------------------------
-
-        /// <summary>
-        /// Places an item at (col, row) in the spatial backpack grid.
-        /// Returns the resulting <see cref="PlacedItem"/> on success, or null on failure.
-        /// On failure the grid is left unchanged (safe-reject).
-        /// </summary>
-        public PlacedItem TryPlaceInBackpack(ItemDefinition item, int col, int row, bool rotated = false)
+        public bool EquipBackpack(ItemDefinition backpackItem)
         {
-            if (item == null) return null;
-            var placed = _spatialBackpack.TryPlace(item, col, row, rotated);
-            if (placed != null) NotifyChanged();
-            return placed;
-        }
+            if (backpackItem == null) return false;
+            if (backpackItem.BackpackStorageWidth <= 0) return false;
 
-        /// <summary>
-        /// Removes a placed item from the spatial backpack grid.
-        /// Returns false if the item is not found in the grid.
-        /// </summary>
-        public bool TryRemoveFromBackpack(PlacedItem placed)
-        {
-            if (!_spatialBackpack.TryRemove(placed)) return false;
-            NotifyChanged();
-            return true;
-        }
+            int newW = backpackItem.BackpackStorageWidth;
+            int newH = backpackItem.BackpackStorageHeight > 0 ? backpackItem.BackpackStorageHeight : 1;
 
-        /// <summary>
-        /// Moves an already-placed item to a new position/rotation in the spatial grid.
-        /// Atomic: on failure the item remains at its original position.
-        /// Returns false if the move fails (out of bounds or overlapping another item).
-        /// </summary>
-        public bool TryMoveInBackpack(PlacedItem placed, int newCol, int newRow, bool newRotated)
-        {
-            if (!_spatialBackpack.TryMove(placed, newCol, newRow, newRotated)) return false;
-            NotifyChanged();
-            return true;
-        }
+            var overflow = _spatialGrid.SimulateResize(newW, newH);
+            if (overflow.Count > 0) return false;
 
-        /// <summary>
-        /// Finds the first available position and places the item there.
-        /// If the item is rotatable and doesn't fit in the given orientation, tries the other.
-        /// Returns null if no position fits at all (full or item too large).
-        /// </summary>
-        public PlacedItem TryAutoPlaceInBackpack(ItemDefinition item, bool rotated = false)
-        {
-            if (item == null) return null;
+            var backpackSlot = GetEquipmentSlot(EquipmentSlotType.Backpack);
+            if (backpackSlot != null)
+                backpackSlot.Clear();
 
-            if (_spatialBackpack.TryFindFirstFit(item, rotated, out int col, out int row))
-                return TryPlaceInBackpack(item, col, row, rotated);
+            if (backpackSlot != null)
+                backpackSlot.TryEquip(backpackItem);
 
-            // Try opposite rotation for rotatable items
-            if (item.Rotatable && _spatialBackpack.TryFindFirstFit(item, !rotated, out col, out row))
-                return TryPlaceInBackpack(item, col, row, !rotated);
-
-            return null;
-        }
-
-        /// <summary>
-        /// Returns true if the item fits somewhere in the spatial backpack grid (either orientation).
-        /// </summary>
-        public bool CanFitInBackpack(ItemDefinition item, bool rotated = false)
-        {
-            if (item == null) return false;
-            if (_spatialBackpack.TryFindFirstFit(item, rotated, out _, out _)) return true;
-            if (item.Rotatable && _spatialBackpack.TryFindFirstFit(item, !rotated, out _, out _)) return true;
-            return false;
-        }
-
-        /// <summary>
-        /// Resizes the spatial backpack grid (e.g. when the player equips a larger/smaller backpack).
-        /// Returns false and leaves the grid unchanged if existing contents would overflow the new size.
-        /// </summary>
-        public bool TryResizeSpatialBackpack(int newWidth, int newHeight)
-        {
-            if (!_spatialBackpack.TryResize(newWidth, newHeight)) return false;
+            _spatialGrid.ResizeWithItems(newW, newH);
             NotifyChanged();
             return true;
         }
 
         // -------------------------------------------------------------------------
-        // Storage domains (PocketsHotbar + BackpackGrid)
+        // Storage domains (PocketsHotbar + SpatialGrid)
         // -------------------------------------------------------------------------
 
         public bool TryAddItem(ItemDefinition item, int amount)
@@ -201,30 +140,53 @@ namespace ExtractionDeadIsles.Inventory
             if (item == null || amount <= 0) return false;
             int remaining = amount;
 
-            remaining = AddToCollection(_pocketsHotbar, item, remaining, onlyExistingStacks: true);
-            remaining = AddToCollection(_backpackGrid, item, remaining, onlyExistingStacks: true);
-            remaining = AddToCollection(_pocketsHotbar, item, remaining, onlyExistingStacks: false);
-            remaining = AddToCollection(_backpackGrid, item, remaining, onlyExistingStacks: false);
+            // Step 1: merge into existing pocket stacks
+            remaining = MergeToPockets(item, remaining);
+            if (remaining <= 0) { NotifyChanged(); return true; }
 
-            if (remaining != amount)
+            // Step 2: merge into existing grid stacks
+            int merged = _spatialGrid.TryMergeAmount(item, remaining);
+            remaining -= merged;
+            if (remaining <= 0) { NotifyChanged(); return true; }
+
+            // Step 3: place into empty pocket slots
+            remaining = FillEmptyPockets(item, remaining);
+            if (remaining <= 0) { NotifyChanged(); return true; }
+
+            // Step 4: place new grid stacks
+            if (_spatialGrid.TryPlaceFirstFit(item, remaining))
+            {
+                NotifyChanged();
+                return true;
+            }
+
+            // Partial success: some went in, some didn't
+            if (remaining < amount)
                 NotifyChanged();
 
-            return remaining == 0;
+            return false;
         }
 
-        private int AddToCollection(List<InventorySlot> slots, ItemDefinition item, int amount, bool onlyExistingStacks)
+        private int MergeToPockets(ItemDefinition item, int amount)
         {
             int remaining = amount;
-            foreach (var slot in slots)
+            foreach (var slot in _pocketsHotbar)
             {
                 if (remaining <= 0) break;
+                if (!slot.HasItem) continue;
+                if (slot.Item != item) continue;
+                remaining = slot.TryAdd(item, remaining);
+            }
+            return remaining;
+        }
 
-                if (onlyExistingStacks)
-                {
-                    if (!slot.HasItem) continue;
-                    if (slot.Item != item) continue;
-                }
-
+        private int FillEmptyPockets(ItemDefinition item, int amount)
+        {
+            int remaining = amount;
+            foreach (var slot in _pocketsHotbar)
+            {
+                if (remaining <= 0) break;
+                if (slot.HasItem) continue;
                 if (!slot.CanAccept(item)) continue;
                 remaining = slot.TryAdd(item, remaining);
             }
@@ -234,47 +196,37 @@ namespace ExtractionDeadIsles.Inventory
         public bool HasItems(ItemDefinition item, int amount)
         {
             if (item == null || amount <= 0) return false;
-            int found = CountItem(item);
-            return found >= amount;
+            return CountItem(item) >= amount;
         }
 
         public int CountItem(ItemDefinition item)
         {
             if (item == null) return 0;
             int total = 0;
-            CountInCollection(_pocketsHotbar, item, ref total);
-            CountInCollection(_backpackGrid, item, ref total);
+            foreach (var slot in _pocketsHotbar)
+                if (slot.Item == item) total += slot.Quantity;
+            total += _spatialGrid.CountItem(item);
             return total;
-        }
-
-        private void CountInCollection(List<InventorySlot> slots, ItemDefinition item, ref int total)
-        {
-            foreach (var slot in slots)
-                if (slot.Item == item)
-                    total += slot.Quantity;
         }
 
         public bool RemoveItems(ItemDefinition item, int amount)
         {
             if (!HasItems(item, amount)) return false;
-
             int remaining = amount;
-            remaining = RemoveFromCollection(_pocketsHotbar, item, remaining);
-            remaining = RemoveFromCollection(_backpackGrid, item, remaining);
-            NotifyChanged();
-            return remaining <= 0;
-        }
 
-        private int RemoveFromCollection(List<InventorySlot> slots, ItemDefinition item, int amount)
-        {
-            int remaining = amount;
-            foreach (var slot in slots)
+            // Remove from pockets first
+            foreach (var slot in _pocketsHotbar)
             {
                 if (remaining <= 0) break;
                 if (slot.Item != item) continue;
                 remaining -= slot.Remove(remaining);
             }
-            return remaining;
+
+            if (remaining > 0)
+                _spatialGrid.RemoveAmount(item, remaining);
+
+            NotifyChanged();
+            return true;
         }
 
         public ItemDefinition GetHotbarItem(int index)
@@ -291,19 +243,23 @@ namespace ExtractionDeadIsles.Inventory
             return true;
         }
 
-        public bool TryMoveToHotbar(int backpackIndex, int hotbarIndex)
+        public bool CanAddItem(ItemDefinition item, int amount)
         {
-            if (_backpackGrid == null || _pocketsHotbar == null) return false;
-            if (backpackIndex < 0 || backpackIndex >= _backpackGrid.Count) return false;
-            if (hotbarIndex < 0 || hotbarIndex >= _pocketsHotbar.Count) return false;
+            if (item == null || amount <= 0) return false;
 
-            var backpackSlot = _backpackGrid[backpackIndex];
-            var hotbarSlot = _pocketsHotbar[hotbarIndex];
-            var tempStack = hotbarSlot.Stack;
-            hotbarSlot.Stack = backpackSlot.Stack;
-            backpackSlot.Stack = tempStack;
-            NotifyChanged();
-            return true;
+            int pocketCapacity = 0;
+            foreach (var slot in _pocketsHotbar)
+            {
+                if (!slot.HasItem)
+                    pocketCapacity += item.MaxStack;
+                else if (slot.Item == item && item.Stackable)
+                    pocketCapacity += item.MaxStack - slot.Quantity;
+            }
+
+            if (pocketCapacity >= amount) return true;
+
+            int gridNeeds = amount - pocketCapacity;
+            return _spatialGrid.CanFitAmount(item, gridNeeds);
         }
 
         public string GetInventoryDebugSummary()
@@ -313,42 +269,17 @@ namespace ExtractionDeadIsles.Inventory
             foreach (var slot in _equipmentSlots)
                 sb.AppendLine($"  [{slot.SlotType}] {(slot.HasItem ? slot.Item.DisplayName : "Empty")}");
             sb.AppendLine("Hotbar:");
-            AppendCollection(sb, _pocketsHotbar);
-            sb.AppendLine("Backpack Grid:");
-            AppendCollection(sb, _backpackGrid);
+            for (int i = 0; i < _pocketsHotbar.Count; i++)
+            {
+                var slot = _pocketsHotbar[i];
+                sb.AppendLine(slot.HasItem
+                    ? $"  [{i}] {slot.Item.DisplayName} x{slot.Quantity}"
+                    : $"  [{i}] Empty");
+            }
+            sb.AppendLine($"Backpack Grid ({_spatialGrid.Width}x{_spatialGrid.Height}):");
+            foreach (var pi in _spatialGrid.GetAllPlaced())
+                sb.AppendLine($"  ({pi.x},{pi.y}) {pi.item.DisplayName} x{pi.quantity}{(pi.rotated ? " [R]" : "")}");
             return sb.ToString();
-        }
-
-        private void AppendCollection(StringBuilder sb, List<InventorySlot> slots)
-        {
-            for (int i = 0; i < slots.Count; i++)
-            {
-                var slot = slots[i];
-                if (!slot.HasItem)
-                    sb.AppendLine($"[{i}] Empty");
-                else
-                    sb.AppendLine($"[{i}] {slot.Item.DisplayName} x{slot.Quantity}");
-            }
-        }
-
-        public bool CanAddItem(ItemDefinition item, int amount)
-        {
-            if (item == null || amount <= 0) return false;
-            int capacity = 0;
-            CalculateCapacity(_pocketsHotbar, item, ref capacity);
-            CalculateCapacity(_backpackGrid, item, ref capacity);
-            return capacity >= amount;
-        }
-
-        private void CalculateCapacity(List<InventorySlot> slots, ItemDefinition item, ref int capacity)
-        {
-            foreach (var slot in slots)
-            {
-                if (!slot.HasItem)
-                    capacity += item.MaxStack;
-                else if (slot.Item == item && item.Stackable)
-                    capacity += item.MaxStack - slot.Quantity;
-            }
         }
 
         public void NotifyChanged() => OnInventoryChanged?.Invoke();
