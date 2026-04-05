@@ -142,7 +142,7 @@ namespace ExtractionDeadIsles.UI
 
             string lightLabel = _station.IsBurning ? "Burning" : "Light Fire";
             GUI.enabled = !_station.IsBurning && _station.CanLight;
-            if (GUI.Button(new Rect(rect.x + 10f, slotY + 250f, 140f, 34f), lightLabel)))
+            if (GUI.Button(new Rect(rect.x + 10f, slotY + 250f, 140f, 34f), lightLabel))
                 _station.TryLight();
             GUI.enabled = true;
 
