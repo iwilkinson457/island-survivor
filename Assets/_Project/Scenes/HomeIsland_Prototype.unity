@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 45145284}
   - component: {fileID: 45145283}
   - component: {fileID: 45145282}
+  - component: {fileID: 45145286}
   m_Layer: 7
   m_Name: Fiber (4)
   m_TagString: Resources
@@ -231,6 +232,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &45145286
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 45145281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &46069116
 GameObject:
   m_ObjectHideFlags: 0
@@ -274,6 +293,7 @@ GameObject:
   - component: {fileID: 214265494}
   - component: {fileID: 214265493}
   - component: {fileID: 214265492}
+  - component: {fileID: 214265496}
   m_Layer: 7
   m_Name: Fiber (7)
   m_TagString: Resources
@@ -374,6 +394,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &214265496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 214265491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &273614970
 GameObject:
   m_ObjectHideFlags: 0
@@ -476,6 +514,7 @@ GameObject:
   - component: {fileID: 275085340}
   - component: {fileID: 275085339}
   - component: {fileID: 275085338}
+  - component: {fileID: 275085342}
   m_Layer: 7
   m_Name: Cube (10)
   m_TagString: Resources
@@ -576,6 +615,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &275085342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 275085337}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &346880441
 GameObject:
   m_ObjectHideFlags: 0
@@ -656,6 +713,7 @@ GameObject:
   - component: {fileID: 426580375}
   - component: {fileID: 426580374}
   - component: {fileID: 426580373}
+  - component: {fileID: 426580377}
   m_Layer: 7
   m_Name: Cube (11)
   m_TagString: Resources
@@ -756,6 +814,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &426580377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 426580372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &440796931
 GameObject:
   m_ObjectHideFlags: 0
@@ -768,6 +844,7 @@ GameObject:
   - component: {fileID: 440796934}
   - component: {fileID: 440796933}
   - component: {fileID: 440796932}
+  - component: {fileID: 440796936}
   m_Layer: 7
   m_Name: Cube (3)
   m_TagString: Resources
@@ -868,6 +945,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &440796936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 440796931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &485973224
 GameObject:
   m_ObjectHideFlags: 0
@@ -902,7 +997,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
   itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
   amount: 1
-  usesRemaining: 1
+  usesRemaining: 10
   promptOverride: Pickup Sticks
   canRespawn: 0
   respawnTime: 30
@@ -1011,6 +1106,7 @@ GameObject:
   - component: {fileID: 519426631}
   - component: {fileID: 519426630}
   - component: {fileID: 519426629}
+  - component: {fileID: 519426633}
   m_Layer: 7
   m_Name: Fiber (9)
   m_TagString: Resources
@@ -1111,6 +1207,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &519426633
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519426628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &540094836
 GameObject:
   m_ObjectHideFlags: 0
@@ -1261,6 +1375,7 @@ GameObject:
   - component: {fileID: 623287285}
   - component: {fileID: 623287284}
   - component: {fileID: 623287283}
+  - component: {fileID: 623287287}
   m_Layer: 7
   m_Name: Fiber (3)
   m_TagString: Resources
@@ -1361,6 +1476,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &623287287
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623287282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &673219765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1519,6 +1652,7 @@ GameObject:
   - component: {fileID: 689045656}
   - component: {fileID: 689045655}
   - component: {fileID: 689045654}
+  - component: {fileID: 689045658}
   m_Layer: 7
   m_Name: Fiber (1)
   m_TagString: Resources
@@ -1619,6 +1753,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &689045658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 689045653}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &739961477
 GameObject:
   m_ObjectHideFlags: 0
@@ -1631,6 +1783,7 @@ GameObject:
   - component: {fileID: 739961480}
   - component: {fileID: 739961479}
   - component: {fileID: 739961478}
+  - component: {fileID: 739961482}
   m_Layer: 7
   m_Name: Stick (10)
   m_TagString: Resources
@@ -1731,6 +1884,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &739961482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 739961477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &808989856
 GameObject:
   m_ObjectHideFlags: 0
@@ -1856,6 +2027,7 @@ GameObject:
   - component: {fileID: 844735342}
   - component: {fileID: 844735341}
   - component: {fileID: 844735340}
+  - component: {fileID: 844735344}
   m_Layer: 7
   m_Name: Stick (6)
   m_TagString: Resources
@@ -1956,6 +2128,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &844735344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 844735339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &942780282
 GameObject:
   m_ObjectHideFlags: 0
@@ -1990,7 +2180,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
   itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
   amount: 1
-  usesRemaining: 1
+  usesRemaining: 10
   promptOverride: Pickup Fiber
   canRespawn: 0
   respawnTime: 30
@@ -2099,6 +2289,7 @@ GameObject:
   - component: {fileID: 974033011}
   - component: {fileID: 974033010}
   - component: {fileID: 974033009}
+  - component: {fileID: 974033013}
   m_Layer: 7
   m_Name: Fiber (10)
   m_TagString: Resources
@@ -2199,6 +2390,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &974033013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 974033008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &997518735
 GameObject:
   m_ObjectHideFlags: 0
@@ -2349,6 +2558,7 @@ GameObject:
   - component: {fileID: 1007532586}
   - component: {fileID: 1007532585}
   - component: {fileID: 1007532584}
+  - component: {fileID: 1007532588}
   m_Layer: 7
   m_Name: Cube (8)
   m_TagString: Resources
@@ -2449,6 +2659,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1007532588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1007532583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1057042965
 GameObject:
   m_ObjectHideFlags: 0
@@ -2483,7 +2711,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
   itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
   amount: 1
-  usesRemaining: 1
+  usesRemaining: 10
   promptOverride: Gather Stone
   canRespawn: 0
   respawnTime: 30
@@ -2623,6 +2851,7 @@ GameObject:
   - component: {fileID: 1107751534}
   - component: {fileID: 1107751533}
   - component: {fileID: 1107751532}
+  - component: {fileID: 1107751536}
   m_Layer: 7
   m_Name: Fiber (6)
   m_TagString: Resources
@@ -2723,6 +2952,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1107751536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1107751531}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1193944331
 GameObject:
   m_ObjectHideFlags: 0
@@ -2735,6 +2982,7 @@ GameObject:
   - component: {fileID: 1193944334}
   - component: {fileID: 1193944333}
   - component: {fileID: 1193944332}
+  - component: {fileID: 1193944336}
   m_Layer: 7
   m_Name: Stick (7)
   m_TagString: Resources
@@ -2835,6 +3083,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1193944336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1193944331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1196188271
 GameObject:
   m_ObjectHideFlags: 0
@@ -2847,6 +3113,7 @@ GameObject:
   - component: {fileID: 1196188274}
   - component: {fileID: 1196188273}
   - component: {fileID: 1196188272}
+  - component: {fileID: 1196188276}
   m_Layer: 7
   m_Name: Stick (8)
   m_TagString: Resources
@@ -2947,6 +3214,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1196188276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1196188271}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1249377853
 GameObject:
   m_ObjectHideFlags: 0
@@ -2959,6 +3244,7 @@ GameObject:
   - component: {fileID: 1249377856}
   - component: {fileID: 1249377855}
   - component: {fileID: 1249377854}
+  - component: {fileID: 1249377858}
   m_Layer: 7
   m_Name: Stick (3)
   m_TagString: Resources
@@ -3059,6 +3345,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1249377858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1249377853}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1262792748
 GameObject:
   m_ObjectHideFlags: 0
@@ -3071,6 +3375,7 @@ GameObject:
   - component: {fileID: 1262792751}
   - component: {fileID: 1262792750}
   - component: {fileID: 1262792749}
+  - component: {fileID: 1262792753}
   m_Layer: 7
   m_Name: Cube (9)
   m_TagString: Resources
@@ -3171,6 +3476,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1262792753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1262792748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1295017563
 GameObject:
   m_ObjectHideFlags: 0
@@ -3342,6 +3665,7 @@ GameObject:
   - component: {fileID: 1338020988}
   - component: {fileID: 1338020987}
   - component: {fileID: 1338020986}
+  - component: {fileID: 1338020990}
   m_Layer: 7
   m_Name: Cube (4)
   m_TagString: Resources
@@ -3442,6 +3766,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1338020990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1338020985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1355194519
 GameObject:
   m_ObjectHideFlags: 0
@@ -3454,6 +3796,7 @@ GameObject:
   - component: {fileID: 1355194522}
   - component: {fileID: 1355194521}
   - component: {fileID: 1355194520}
+  - component: {fileID: 1355194524}
   m_Layer: 7
   m_Name: Fiber (2)
   m_TagString: Resources
@@ -3554,6 +3897,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1355194524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1355194519}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1395087729
 GameObject:
   m_ObjectHideFlags: 0
@@ -3566,6 +3927,7 @@ GameObject:
   - component: {fileID: 1395087732}
   - component: {fileID: 1395087731}
   - component: {fileID: 1395087730}
+  - component: {fileID: 1395087734}
   m_Layer: 7
   m_Name: Stick (9)
   m_TagString: Resources
@@ -3666,6 +4028,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1395087734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1395087729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1405271432
 GameObject:
   m_ObjectHideFlags: 0
@@ -3837,6 +4217,7 @@ GameObject:
   - component: {fileID: 1452080847}
   - component: {fileID: 1452080846}
   - component: {fileID: 1452080845}
+  - component: {fileID: 1452080849}
   m_Layer: 7
   m_Name: Cube (1)
   m_TagString: Resources
@@ -3937,6 +4318,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1452080849
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1452080844}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1484352254
 GameObject:
   m_ObjectHideFlags: 0
@@ -3971,7 +4370,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
   itemToGrant: {fileID: 11400000, guid: ea6453b85a92eb34c948b8c9c8d52a66, type: 2}
   amount: 1
-  usesRemaining: 1
+  usesRemaining: 5
   promptOverride: Raw Fish
   canRespawn: 0
   respawnTime: 30
@@ -4080,6 +4479,7 @@ GameObject:
   - component: {fileID: 1576137031}
   - component: {fileID: 1576137030}
   - component: {fileID: 1576137029}
+  - component: {fileID: 1576137033}
   m_Layer: 7
   m_Name: Cube (6)
   m_TagString: Resources
@@ -4180,6 +4580,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1576137033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1576137028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1586702171
 GameObject:
   m_ObjectHideFlags: 0
@@ -4338,6 +4756,7 @@ GameObject:
   - component: {fileID: 1625195566}
   - component: {fileID: 1625195565}
   - component: {fileID: 1625195564}
+  - component: {fileID: 1625195568}
   m_Layer: 7
   m_Name: Stick (5)
   m_TagString: Resources
@@ -4438,6 +4857,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1625195568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1625195563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1646807431
 GameObject:
   m_ObjectHideFlags: 0
@@ -4967,6 +5404,7 @@ GameObject:
   - component: {fileID: 1864998427}
   - component: {fileID: 1864998426}
   - component: {fileID: 1864998425}
+  - component: {fileID: 1864998429}
   m_Layer: 7
   m_Name: Cube (2)
   m_TagString: Resources
@@ -5067,6 +5505,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1864998429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1864998424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1894012453
 GameObject:
   m_ObjectHideFlags: 0
@@ -5079,6 +5535,7 @@ GameObject:
   - component: {fileID: 1894012456}
   - component: {fileID: 1894012455}
   - component: {fileID: 1894012454}
+  - component: {fileID: 1894012458}
   m_Layer: 7
   m_Name: Stick (2)
   m_TagString: Resources
@@ -5179,6 +5636,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1894012458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1894012453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1905118314
 GameObject:
   m_ObjectHideFlags: 0
@@ -5191,6 +5666,7 @@ GameObject:
   - component: {fileID: 1905118317}
   - component: {fileID: 1905118316}
   - component: {fileID: 1905118315}
+  - component: {fileID: 1905118319}
   m_Layer: 7
   m_Name: Stick (1)
   m_TagString: Resources
@@ -5291,6 +5767,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1905118319
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1905118314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1917939613
 GameObject:
   m_ObjectHideFlags: 0
@@ -5303,6 +5797,7 @@ GameObject:
   - component: {fileID: 1917939616}
   - component: {fileID: 1917939615}
   - component: {fileID: 1917939614}
+  - component: {fileID: 1917939618}
   m_Layer: 7
   m_Name: Fiber (5)
   m_TagString: Resources
@@ -5403,6 +5898,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1917939618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917939613}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &1965936235
 GameObject:
   m_ObjectHideFlags: 0
@@ -5561,6 +6074,7 @@ GameObject:
   - component: {fileID: 1998949353}
   - component: {fileID: 1998949352}
   - component: {fileID: 1998949351}
+  - component: {fileID: 1998949355}
   m_Layer: 7
   m_Name: Cube (7)
   m_TagString: Resources
@@ -5661,6 +6175,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1998949355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1998949350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &2003893306
 GameObject:
   m_ObjectHideFlags: 0
@@ -5673,6 +6205,7 @@ GameObject:
   - component: {fileID: 2003893309}
   - component: {fileID: 2003893308}
   - component: {fileID: 2003893307}
+  - component: {fileID: 2003893311}
   m_Layer: 7
   m_Name: Fiber (8)
   m_TagString: Resources
@@ -5773,6 +6306,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2003893311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2003893306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Fiber
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &2123069907
 GameObject:
   m_ObjectHideFlags: 0
@@ -5785,6 +6336,7 @@ GameObject:
   - component: {fileID: 2123069910}
   - component: {fileID: 2123069909}
   - component: {fileID: 2123069908}
+  - component: {fileID: 2123069912}
   m_Layer: 7
   m_Name: Cube (5)
   m_TagString: Resources
@@ -5885,6 +6437,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2123069912
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2123069907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: 
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1 &2142234920
 GameObject:
   m_ObjectHideFlags: 0
@@ -5897,6 +6467,7 @@ GameObject:
   - component: {fileID: 2142234923}
   - component: {fileID: 2142234922}
   - component: {fileID: 2142234921}
+  - component: {fileID: 2142234925}
   m_Layer: 7
   m_Name: Stick (4)
   m_TagString: Resources
@@ -5997,6 +6568,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2142234925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2142234920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7993453cc38e96d46813054b49d8fae9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.World.GatherableResource
+  itemToGrant: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+  amount: 1
+  usesRemaining: 1
+  promptOverride: Sticks
+  canRespawn: 0
+  respawnTime: 30
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
