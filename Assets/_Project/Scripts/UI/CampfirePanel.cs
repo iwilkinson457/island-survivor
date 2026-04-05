@@ -33,6 +33,7 @@ namespace ExtractionDeadIsles.UI
         private ItemDefinition _tooltipItem;
         private Rect _tooltipAnchor;
         private Vector2 _inventoryScroll;
+        private int _openedFrame = -1;
 
         private const float PANEL_MARGIN_X = 40f;
         private const float PANEL_MARGIN_Y = 28f;
@@ -55,6 +56,7 @@ namespace ExtractionDeadIsles.UI
         private void Update()
         {
             if (!_visible) return;
+            if (Time.frameCount == _openedFrame) return;
 
             var keyboard = Keyboard.current;
             if (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.eKey.wasPressedThisFrame))
@@ -66,6 +68,7 @@ namespace ExtractionDeadIsles.UI
             if (station == null || inventory == null) return;
             _station = station;
             _visible = true;
+            _openedFrame = Time.frameCount;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -77,6 +80,7 @@ namespace ExtractionDeadIsles.UI
 
             _visible = false;
             _station = null;
+            _openedFrame = -1;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
