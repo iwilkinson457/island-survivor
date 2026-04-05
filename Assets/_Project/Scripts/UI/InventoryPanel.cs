@@ -22,13 +22,15 @@ namespace ExtractionDeadIsles.UI
         [SerializeField] private float worldDropDistance = 1.5f;
         [SerializeField] private LayerMask interactLayer;
 
-        const float PANEL_MARGIN_X = 36f;
-        const float PANEL_MARGIN_Y = 28f;
+        const float PANEL_MARGIN_X = 32f;
+        const float PANEL_MARGIN_Y = 24f;
+        const float PANEL_PADDING = 20f;
         const float CELL = 52f;
         const float GAP = 2f;
         const float STEP = 54f;
-        const float EQUIP_W = 360f;
-        const float EQUIP_GAP = 16f;
+        const float EQUIP_MIN_W = 380f;
+        const float EQUIP_MAX_W = 460f;
+        const float PANEL_GAP = 18f;
 
         bool _visible;
         int _tab;
@@ -114,18 +116,31 @@ namespace ExtractionDeadIsles.UI
 
             float px = _panelRect.x;
             float py = _panelRect.y;
-            float equipX = px + 16f;
-            float equipY = py + 16f;
-            float equipH = _panelRect.height - 32f;
-            float contentX = equipX + EQUIP_W + EQUIP_GAP;
-            float contentY = py + 16f;
-            float contentW = _panelRect.width - (contentX - px) - 16f;
-            float contentH = _panelRect.height - 32f;
+            float innerX = px + PANEL_PADDING;
+            float innerY = py + PANEL_PADDING;
+            float innerW = _panelRect.width - PANEL_PADDING * 2f;
+            float innerH = _panelRect.height - PANEL_PADDING * 2f;
+            float gridMinW = STEP * 8f + 12f;
+            float equipW = Mathf.Clamp(innerW * 0.34f, EQUIP_MIN_W, EQUIP_MAX_W);
+            float contentW = innerW - equipW - PANEL_GAP;
+            if (contentW < gridMinW)
+            {
+                contentW = gridMinW;
+                equipW = innerW - contentW - PANEL_GAP;
+            }
+            equipW = Mathf.Max(320f, equipW);
+
+            float equipX = innerX;
+            float equipY = innerY;
+            float equipH = innerH;
+            float contentX = equipX + equipW + PANEL_GAP;
+            float contentY = innerY;
+            float contentH = innerH;
 
             GUI.Box(_panelRect, "");
-            GUI.Box(new Rect(equipX + EQUIP_W + 6f, py + 8f, 3f, _panelRect.height - 16f), "");
+            GUI.Box(new Rect(contentX - (PANEL_GAP * 0.5f), py + 8f, 3f, _panelRect.height - 16f), "");
 
-            DrawEquipmentPanel(equipX, equipY, EQUIP_W, equipH);
+            DrawEquipmentPanel(equipX, equipY, equipW, equipH);
             DrawTabs(contentX, contentY, contentW);
             if (_tab == 0)
                 DrawStorageTab(contentX, contentY + 42f, contentW, contentH - 48f);
@@ -181,13 +196,23 @@ namespace ExtractionDeadIsles.UI
         private void DrawStorageTab(float x, float y, float width, float height)
         {
             var grid = inventory.SpatialGrid;
+            float gridPixelW = grid.Width * STEP - GAP;
+            float gridX = x + Mathf.Max(0f, (width - gridPixelW) * 0.5f);
+
             GUI.Label(new Rect(x, y, width, 22f), $"<b>Backpack Inventory</b> ({grid.Width}x{grid.Height})");
-            y += 26f;
-            DrawGrid(x, y, grid);
-            y += Mathf.Max(grid.Height * STEP + 18f, height - 110f);
-            GUI.Label(new Rect(x, y, width, 22f), "<b>Pockets / Hotbar</b> — keys 1 to 6");
-            y += 24f;
-            DrawPocketSlots(x, y);
+            y += 28f;
+
+            float gridBgH = grid.Height * STEP + 12f;
+            GUI.Box(new Rect(x, y - 4f, width - 8f, gridBgH), "");
+            DrawGrid(gridX, y + 2f, grid);
+
+            float hotbarY = y + gridBgH + 18f;
+            GUI.Label(new Rect(x, hotbarY, width, 22f), "<b>Pockets / Hotbar</b> — keys 1 to 6");
+            hotbarY += 24f;
+
+            float hotbarWidth = inventory.PocketsHotbar.Count * STEP;
+            float hotbarX = x + Mathf.Max(0f, (width - hotbarWidth) * 0.5f);
+            DrawPocketSlots(hotbarX, hotbarY);
         }
 
         private void DrawGrid(float ox, float oy, BackpackGrid grid)
@@ -342,26 +367,41 @@ namespace ExtractionDeadIsles.UI
             var panelRect = new Rect(ox, oy + 28f, width, height - 28f);
             GUI.Box(panelRect, "");
 
-            var silhouetteRect = new Rect(ox + 92f, oy + 56f, 170f, height - 120f);
+            float centerX = ox + width * 0.5f;
+            float topY = oy + 54f;
+            float slotW = Mathf.Clamp(width * 0.33f, 124f, 156f);
+            float slotH = 52f;
+            float silhouetteW = Mathf.Clamp(width * 0.34f, 140f, 180f);
+            var silhouetteRect = new Rect(centerX - silhouetteW * 0.5f, topY + 18f, silhouetteW, Mathf.Min(height - 130f, 360f));
             DrawBodySilhouette(silhouetteRect);
 
-            DrawEquipmentSlot(EquipmentSlotType.Head,     new Rect(ox + 120f, oy + 40f, 120f, 48f), "Head", e);
-            DrawEquipmentSlot(EquipmentSlotType.Weapon1,  new Rect(ox + 12f,  oy + 140f, 120f, 48f), "Weapon 1", e);
-            DrawEquipmentSlot(EquipmentSlotType.Weapon2,  new Rect(ox + 228f, oy + 140f, 120f, 48f), "Weapon 2", e);
-            DrawEquipmentSlot(EquipmentSlotType.Torso,    new Rect(ox + 120f, oy + 188f, 120f, 48f), "Torso", e);
-            DrawEquipmentSlot(EquipmentSlotType.Backpack, new Rect(ox + 120f, oy + 246f, 120f, 48f), "Backpack", e);
-            DrawEquipmentSlot(EquipmentSlotType.Legs,     new Rect(ox + 120f, oy + 304f, 120f, 48f), "Legs", e);
+            DrawEquipmentSlot(EquipmentSlotType.Head,     new Rect(centerX - slotW * 0.5f, topY, slotW, slotH), "Head", e);
+            DrawEquipmentSlot(EquipmentSlotType.Weapon1,  new Rect(ox + 14f, topY + 110f, slotW, slotH), "Weapon 1", e);
+            DrawEquipmentSlot(EquipmentSlotType.Weapon2,  new Rect(ox + width - slotW - 14f, topY + 110f, slotW, slotH), "Weapon 2", e);
+            DrawEquipmentSlot(EquipmentSlotType.Torso,    new Rect(centerX - slotW * 0.5f, topY + 150f, slotW, slotH), "Torso", e);
+            DrawEquipmentSlot(EquipmentSlotType.Backpack, new Rect(centerX - slotW * 0.5f, topY + 214f, slotW, slotH), "Backpack", e);
+            DrawEquipmentSlot(EquipmentSlotType.Legs,     new Rect(centerX - slotW * 0.5f, topY + 278f, slotW, slotH), "Legs", e);
         }
 
         private void DrawBodySilhouette(Rect rect)
         {
+            float headW = rect.width * 0.34f;
+            float headH = rect.height * 0.16f;
+            float torsoW = rect.width * 0.52f;
+            float torsoH = rect.height * 0.32f;
+            float armW = rect.width * 0.14f;
+            float armH = rect.height * 0.28f;
+            float legW = rect.width * 0.17f;
+            float legH = rect.height * 0.34f;
+            float centerX = rect.x + rect.width * 0.5f;
+
             GUI.color = new Color(0.15f, 0.18f, 0.22f, 0.9f);
-            GUI.Box(new Rect(rect.x + 56f, rect.y + 8f, 58f, 52f), "");
-            GUI.Box(new Rect(rect.x + 42f, rect.y + 66f, 86f, 108f), "");
-            GUI.Box(new Rect(rect.x + 16f, rect.y + 74f, 24f, 92f), "");
-            GUI.Box(new Rect(rect.x + 130f, rect.y + 74f, 24f, 92f), "");
-            GUI.Box(new Rect(rect.x + 50f, rect.y + 182f, 28f, 114f), "");
-            GUI.Box(new Rect(rect.x + 92f, rect.y + 182f, 28f, 114f), "");
+            GUI.Box(new Rect(centerX - headW * 0.5f, rect.y + rect.height * 0.03f, headW, headH), "");
+            GUI.Box(new Rect(centerX - torsoW * 0.5f, rect.y + rect.height * 0.22f, torsoW, torsoH), "");
+            GUI.Box(new Rect(centerX - torsoW * 0.5f - armW - 8f, rect.y + rect.height * 0.26f, armW, armH), "");
+            GUI.Box(new Rect(centerX + torsoW * 0.5f + 8f, rect.y + rect.height * 0.26f, armW, armH), "");
+            GUI.Box(new Rect(centerX - legW - 8f, rect.y + rect.height * 0.58f, legW, legH), "");
+            GUI.Box(new Rect(centerX + 8f, rect.y + rect.height * 0.58f, legW, legH), "");
             GUI.color = Color.white;
         }
 

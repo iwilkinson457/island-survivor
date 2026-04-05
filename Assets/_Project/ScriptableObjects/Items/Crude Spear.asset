@@ -24,3 +24,11 @@ MonoBehaviour:
   hungerRestore: 0
   thirstRestore: 0
   gatherToolMultiplier: 1
+  compatibleEquipmentSlots:
+  - 0
+  - 1
+  backpackStorageWidth: 0
+  backpackStorageHeight: 0
+  gridWidth: 3
+  gridHeight: 1
+  rotatable: 1
