@@ -28,7 +28,27 @@ namespace ExtractionDeadIsles.UI
         {
             var keyboard = Keyboard.current;
             if (keyboard != null && keyboard.tabKey.wasPressedThisFrame)
+            {
                 _visible = !_visible;
+                ApplyCursorState();
+            }
+        }
+
+        private void OnEnable()
+        {
+            ApplyCursorState();
+        }
+
+        private void OnDisable()
+        {
+            _visible = false;
+            ApplyCursorState();
+        }
+
+        private void ApplyCursorState()
+        {
+            Cursor.lockState = _visible ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = _visible;
         }
 
         private void OnGUI()
