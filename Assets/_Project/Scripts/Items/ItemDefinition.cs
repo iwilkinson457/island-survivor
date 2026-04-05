@@ -21,6 +21,10 @@ namespace ExtractionDeadIsles.Items
         [SerializeField] private int thirstRestore;
         [SerializeField] private float gatherToolMultiplier = 1f;
 
+        [Header("Fuel")]
+        [SerializeField] private bool isFuel;
+        [SerializeField] private float fuelBurnSeconds;
+
         [Header("Equipment")]
         [SerializeField] private EquipmentSlotType[] compatibleEquipmentSlots = {};
 
@@ -47,6 +51,8 @@ namespace ExtractionDeadIsles.Items
         public int HungerRestore => hungerRestore;
         public int ThirstRestore => thirstRestore;
         public float GatherToolMultiplier => gatherToolMultiplier;
+        public bool IsFuel => isFuel;
+        public float FuelBurnSeconds => fuelBurnSeconds;
         public EquipmentSlotType[] CompatibleEquipmentSlots => compatibleEquipmentSlots;
         public int BackpackStorageWidth => backpackStorageWidth;
         public int BackpackStorageHeight => backpackStorageHeight;
@@ -70,6 +76,7 @@ namespace ExtractionDeadIsles.Items
 
             maxStack = Mathf.Max(1, maxStack);
             gatherToolMultiplier = Mathf.Max(0.1f, gatherToolMultiplier);
+            fuelBurnSeconds = Mathf.Max(0f, fuelBurnSeconds);
 
             if (string.IsNullOrWhiteSpace(itemId))
                 itemId = name.ToLowerInvariant().Replace(' ', '_');

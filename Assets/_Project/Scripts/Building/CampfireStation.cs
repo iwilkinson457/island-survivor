@@ -2,7 +2,7 @@ using UnityEngine;
 using ExtractionDeadIsles.Interaction;
 using ExtractionDeadIsles.Inventory;
 using ExtractionDeadIsles.Items;
-using ExtractionDeadIsles.Player;
+using ExtractionDeadIsles.UI;
 using ExtractionDeadIsles.World;
 
 namespace ExtractionDeadIsles.Building
@@ -14,8 +14,28 @@ namespace ExtractionDeadIsles.Building
         [SerializeField] private float useRadius = 3f;
         [SerializeField] private ItemDefinition rawItem;
         [SerializeField] private ItemDefinition cookedItem;
+        [SerializeField] private float cookDurationSeconds = 8f;
+
+        [SerializeField] private InventorySlot inputSlot = new InventorySlot();
+        [SerializeField] private InventorySlot fuelSlot = new InventorySlot();
+        [SerializeField] private InventorySlot outputSlot = new InventorySlot();
+
+        [SerializeField] private bool isLit;
+        [SerializeField] private float currentFuelSecondsRemaining;
+        [SerializeField] private float currentCookProgress;
 
         public string InteractionPrompt => prompt;
+        public bool IsBurning => isLit && currentFuelSecondsRemaining > 0f;
+        public bool CanLight => !IsBurning && fuelSlot.HasItem && fuelSlot.Item != null && fuelSlot.Item.IsFuel && fuelSlot.Quantity > 0;
+        public float CurrentFuelSecondsRemaining => currentFuelSecondsRemaining;
+        public float CurrentCookProgress => currentCookProgress;
+        public float CookDurationSeconds => cookDurationSeconds;
+        public ItemDefinition InputItem => inputSlot.Item;
+        public int InputQuantity => inputSlot.Quantity;
+        public ItemDefinition FuelItem => fuelSlot.Item;
+        public int FuelQuantity => fuelSlot.Quantity;
+        public ItemDefinition OutputItem => outputSlot.Item;
+        public int OutputQuantity => outputSlot.Quantity;
 
         private void Reset()
         {
@@ -24,9 +44,19 @@ namespace ExtractionDeadIsles.Building
             sphere.radius = useRadius;
         }
 
+        private void Update()
+        {
+            TickFuel(Time.deltaTime);
+            TickCooking(Time.deltaTime);
+        }
+
         public void Interact(GameObject interactor)
         {
-            TryCook(interactor);
+            var panel = interactor.GetComponent<CampfirePanel>();
+            if (panel == null)
+                panel = interactor.AddComponent<CampfirePanel>();
+
+            panel.Open(this);
         }
 
         public void ConfigureCooking(ItemDefinition raw, ItemDefinition cooked)
@@ -35,26 +65,135 @@ namespace ExtractionDeadIsles.Building
             cookedItem = cooked;
         }
 
-        public bool TryCook(GameObject interactor)
+        public bool CanAcceptInput(ItemDefinition item)
         {
-            var inventory = interactor.GetComponent<PlayerInventory>();
-            if (inventory == null || rawItem == null || cookedItem == null) return false;
-            if (!inventory.HasItems(rawItem, 1))
+            if (item == null || rawItem == null) return false;
+            if (item != rawItem) return false;
+            return !inputSlot.HasItem || inputSlot.Item == item;
+        }
+
+        public bool CanAcceptFuel(ItemDefinition item)
+        {
+            if (item == null || !item.IsFuel || item.FuelBurnSeconds <= 0f) return false;
+            return !fuelSlot.HasItem || fuelSlot.Item == item;
+        }
+
+        public bool TryMoveInputFromPlayer(PlayerInventory inventory, ItemDefinition item, int amount)
+        {
+            if (inventory == null || item == null || amount <= 0) return false;
+            if (!CanAcceptInput(item)) return false;
+            if (!inventory.RemoveItems(item, amount)) return false;
+
+            int leftover = inputSlot.TryAdd(item, amount);
+            if (leftover > 0)
             {
-                Debug.Log("[CampfireStation] No raw food available to cook.");
+                inventory.TryAddItem(item, leftover);
                 return false;
             }
 
-            if (!inventory.CanAddItem(cookedItem, 1))
-            {
-                Debug.Log("[CampfireStation] Inventory full. Could not add cooked food.");
-                return false;
-            }
-
-            inventory.RemoveItems(rawItem, 1);
-            inventory.TryAddItem(cookedItem, 1);
-            Debug.Log($"[CampfireStation] Cooked {cookedItem.DisplayName}.");
             return true;
+        }
+
+        public bool TryMoveFuelFromPlayer(PlayerInventory inventory, ItemDefinition item, int amount)
+        {
+            if (inventory == null || item == null || amount <= 0) return false;
+            if (!CanAcceptFuel(item)) return false;
+            if (!inventory.RemoveItems(item, amount)) return false;
+
+            int leftover = fuelSlot.TryAdd(item, amount);
+            if (leftover > 0)
+            {
+                inventory.TryAddItem(item, leftover);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryReturnInputToPlayer(PlayerInventory inventory)
+        {
+            if (inventory == null || !inputSlot.HasItem) return false;
+            var item = inputSlot.Item;
+            int qty = inputSlot.Quantity;
+            if (!inventory.TryAddItem(item, qty)) return false;
+            inputSlot.Clear();
+            currentCookProgress = 0f;
+            return true;
+        }
+
+        public bool TryReturnFuelToPlayer(PlayerInventory inventory)
+        {
+            if (inventory == null || !fuelSlot.HasItem) return false;
+            var item = fuelSlot.Item;
+            int qty = fuelSlot.Quantity;
+            if (!inventory.TryAddItem(item, qty)) return false;
+            fuelSlot.Clear();
+            return true;
+        }
+
+        public bool TryTakeOutputToPlayer(PlayerInventory inventory)
+        {
+            if (inventory == null || !outputSlot.HasItem) return false;
+            var item = outputSlot.Item;
+            int qty = outputSlot.Quantity;
+            if (!inventory.TryAddItem(item, qty)) return false;
+            outputSlot.Clear();
+            return true;
+        }
+
+        public bool TryLight()
+        {
+            if (!CanLight) return false;
+            isLit = true;
+            return ConsumeNextFuelUnit();
+        }
+
+        private void TickFuel(float deltaTime)
+        {
+            if (!isLit) return;
+
+            if (currentFuelSecondsRemaining > 0f)
+            {
+                currentFuelSecondsRemaining = Mathf.Max(0f, currentFuelSecondsRemaining - deltaTime);
+                if (currentFuelSecondsRemaining > 0f)
+                    return;
+            }
+
+            if (!ConsumeNextFuelUnit())
+                isLit = false;
+        }
+
+        private bool ConsumeNextFuelUnit()
+        {
+            if (!fuelSlot.HasItem || fuelSlot.Item == null || !fuelSlot.Item.IsFuel || fuelSlot.Item.FuelBurnSeconds <= 0f)
+            {
+                currentFuelSecondsRemaining = 0f;
+                return false;
+            }
+
+            currentFuelSecondsRemaining = fuelSlot.Item.FuelBurnSeconds;
+            fuelSlot.Remove(1);
+            if (!fuelSlot.HasItem)
+                fuelSlot.Clear();
+            return true;
+        }
+
+        private void TickCooking(float deltaTime)
+        {
+            if (!IsBurning) return;
+            if (!inputSlot.HasItem || inputSlot.Item != rawItem || cookedItem == null) return;
+            if (outputSlot.HasItem && outputSlot.Item != cookedItem) return;
+            if (outputSlot.HasItem && outputSlot.Quantity >= cookedItem.MaxStack) return;
+
+            currentCookProgress += deltaTime;
+            if (currentCookProgress < cookDurationSeconds)
+                return;
+
+            currentCookProgress = 0f;
+            inputSlot.Remove(1);
+            outputSlot.TryAdd(cookedItem, 1);
+            if (!inputSlot.HasItem)
+                inputSlot.Clear();
         }
 
         private void OnTriggerEnter(Collider other)
