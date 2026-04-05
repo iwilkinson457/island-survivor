@@ -25,7 +25,15 @@ namespace ExtractionDeadIsles.Building
 
             float slope = Vector3.Angle(hit.normal, Vector3.up);
             bool validSlope = slope <= maxSlope;
-            bool blocked = Physics.CheckSphere(hit.point + Vector3.up * 0.2f, overlapRadius);
+
+            int blockingMask = ~0;
+            int groundLayer = LayerMask.NameToLayer("Ground");
+            int resourceLayer = LayerMask.NameToLayer("Resource");
+            if (groundLayer >= 0) blockingMask &= ~(1 << groundLayer);
+            if (resourceLayer >= 0) blockingMask &= ~(1 << resourceLayer);
+
+            bool blocked = Physics.CheckSphere(hit.point + Vector3.up * 0.5f, overlapRadius, blockingMask, QueryTriggerInteraction.Ignore);
+
             IsValidPlacement = validSlope && !blocked;
             return true;
         }
