@@ -99,7 +99,11 @@ namespace ExtractionDeadIsles.Player
             if (keyboard.aKey.isPressed) _moveInput.x -= 1f;
             if (keyboard.dKey.isPressed) _moveInput.x += 1f;
 
-            _lookInput = mouse.delta.ReadValue() * mouseSensitivity;
+            bool cursorUnlocked = Cursor.lockState != CursorLockMode.Locked;
+
+            _lookInput = cursorUnlocked
+                ? Vector2.zero
+                : mouse.delta.ReadValue() * mouseSensitivity;
             _sprintHeld = keyboard.leftShiftKey.isPressed;
             _crouchHeld = keyboard.leftCtrlKey.isPressed;
 

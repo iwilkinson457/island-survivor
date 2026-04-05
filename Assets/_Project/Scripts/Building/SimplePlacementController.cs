@@ -29,6 +29,9 @@ namespace ExtractionDeadIsles.Building
 
         private void Update()
         {
+            if (Cursor.lockState != CursorLockMode.Locked)
+                return;
+
             HandleHotbarSelection();
             HandlePlacementToggle();
             HandlePlacementUpdate();
