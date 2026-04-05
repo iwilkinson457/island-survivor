@@ -25,12 +25,16 @@ namespace ExtractionDeadIsles.UI
         const float PANEL_MARGIN_X = 32f;
         const float PANEL_MARGIN_Y = 24f;
         const float PANEL_PADDING = 20f;
-        const float CELL = 52f;
-        const float GAP = 2f;
-        const float STEP = 54f;
+        const float SLOT_GAP = 4f;
+        const float MIN_SLOT_SIZE = 104f;
+        const float MAX_SLOT_SIZE = 220f;
+        const float HOTBAR_LABEL_H = 18f;
         const float EQUIP_MIN_W = 380f;
         const float EQUIP_MAX_W = 460f;
         const float PANEL_GAP = 18f;
+
+        float _slotSize = MIN_SLOT_SIZE;
+        float _slotStep = MIN_SLOT_SIZE + SLOT_GAP;
 
         bool _visible;
         int _tab;
@@ -124,7 +128,7 @@ namespace ExtractionDeadIsles.UI
             float innerY = py + PANEL_PADDING;
             float innerW = _panelRect.width - PANEL_PADDING * 2f;
             float innerH = _panelRect.height - PANEL_PADDING * 2f;
-            float gridMinW = STEP * 8f + 12f;
+            float gridMinW = (MIN_SLOT_SIZE + SLOT_GAP) * 8f + 12f;
             float equipW = Mathf.Clamp(innerW * 0.34f, EQUIP_MIN_W, EQUIP_MAX_W);
             float contentW = innerW - equipW - PANEL_GAP;
             if (contentW < gridMinW)
@@ -203,21 +207,32 @@ namespace ExtractionDeadIsles.UI
         private void DrawStorageTab(float x, float y, float width, float height)
         {
             var grid = inventory.SpatialGrid;
-            float gridPixelW = grid.Width * STEP - GAP;
+            int targetColumns = Mathf.Max(8, grid.Width, inventory.PocketsHotbar.Count);
+
+            float availableGridWidth = Mathf.Max(320f, width - 20f);
+            float availableGridHeight = Mathf.Max(220f, height - 150f);
+            float widthLimitedSlot = (availableGridWidth - ((targetColumns - 1) * SLOT_GAP)) / targetColumns;
+            float heightLimitedSlot = (availableGridHeight - ((grid.Height - 1) * SLOT_GAP)) / Mathf.Max(1, grid.Height);
+
+            _slotSize = Mathf.Clamp(Mathf.Min(widthLimitedSlot, heightLimitedSlot), MIN_SLOT_SIZE, MAX_SLOT_SIZE);
+            _slotStep = _slotSize + SLOT_GAP;
+
+            float gridPixelW = grid.Width * _slotStep - SLOT_GAP;
+            float gridPixelH = grid.Height * _slotStep - SLOT_GAP;
             float gridX = x + Mathf.Max(0f, (width - gridPixelW) * 0.5f);
 
             GUI.Label(new Rect(x, y, width, 22f), $"<b>Backpack Inventory</b> ({grid.Width}x{grid.Height})");
             y += 28f;
 
-            float gridBgH = grid.Height * STEP + 12f;
+            float gridBgH = gridPixelH + 16f;
             GUI.Box(new Rect(x, y - 4f, width - 8f, gridBgH), "");
-            DrawGrid(gridX, y + 2f, grid);
+            DrawGrid(gridX, y + 4f, grid);
 
             float hotbarY = y + gridBgH + 18f;
             GUI.Label(new Rect(x, hotbarY, width, 22f), "<b>Pockets / Hotbar</b> — keys 1 to 6");
             hotbarY += 24f;
 
-            float hotbarWidth = inventory.PocketsHotbar.Count * STEP;
+            float hotbarWidth = inventory.PocketsHotbar.Count * _slotStep - SLOT_GAP;
             float hotbarX = x + Mathf.Max(0f, (width - hotbarWidth) * 0.5f);
             DrawPocketSlots(hotbarX, hotbarY);
         }
@@ -226,8 +241,8 @@ namespace ExtractionDeadIsles.UI
         {
             var e = Event.current;
 
-            int hovCol = Mathf.FloorToInt((e.mousePosition.x - ox) / STEP);
-            int hovRow = Mathf.FloorToInt((e.mousePosition.y - oy) / STEP);
+            int hovCol = Mathf.FloorToInt((e.mousePosition.x - ox) / _slotStep);
+            int hovRow = Mathf.FloorToInt((e.mousePosition.y - oy) / _slotStep);
 
             int dw = 1, dh = 1;
             if (_dragging && _dragItem != null)
@@ -241,7 +256,7 @@ namespace ExtractionDeadIsles.UI
             {
                 for (int col = 0; col < grid.Width; col++)
                 {
-                    var cellRect = new Rect(ox + col * STEP, oy + row * STEP, CELL, CELL);
+                    var cellRect = new Rect(ox + col * _slotStep, oy + row * _slotStep, _slotSize, _slotSize);
                     var pi = grid.GetItemAt(col, row);
                     if (pi == null)
                     {
@@ -268,9 +283,9 @@ namespace ExtractionDeadIsles.UI
             {
                 if (drawn.Contains(pi)) continue;
                 drawn.Add(pi);
-                float iw = pi.EffectiveWidth  * STEP - GAP;
-                float ih = pi.EffectiveHeight * STEP - GAP;
-                var itemRect = new Rect(ox + pi.x * STEP, oy + pi.y * STEP, iw, ih);
+                float iw = pi.EffectiveWidth  * _slotStep - SLOT_GAP;
+                float ih = pi.EffectiveHeight * _slotStep - SLOT_GAP;
+                var itemRect = new Rect(ox + pi.x * _slotStep, oy + pi.y * _slotStep, iw, ih);
                 DrawItemCard(itemRect, pi.item, pi.quantity, new Color(0.65f, 0.82f, 1f), compactText: false);
             }
 
@@ -279,7 +294,7 @@ namespace ExtractionDeadIsles.UI
             {
                 for (int col = 0; col < grid.Width; col++)
                 {
-                    var cellRect = new Rect(ox + col * STEP, oy + row * STEP, CELL, CELL);
+                    var cellRect = new Rect(ox + col * _slotStep, oy + row * _slotStep, _slotSize, _slotSize);
                     if (!cellRect.Contains(e.mousePosition)) continue;
                     var pi = grid.GetItemAt(col, row);
 
@@ -302,8 +317,8 @@ namespace ExtractionDeadIsles.UI
 
                     if (e.type == EventType.MouseUp && e.button == 0 && _dragging)
                     {
-                        int anchorCol = Mathf.Clamp(Mathf.FloorToInt((e.mousePosition.x - ox) / STEP), 0, grid.Width  - 1);
-                        int anchorRow = Mathf.Clamp(Mathf.FloorToInt((e.mousePosition.y - oy) / STEP), 0, grid.Height - 1);
+                        int anchorCol = Mathf.Clamp(Mathf.FloorToInt((e.mousePosition.x - ox) / _slotStep), 0, grid.Width  - 1);
+                        int anchorRow = Mathf.Clamp(Mathf.FloorToInt((e.mousePosition.y - oy) / _slotStep), 0, grid.Height - 1);
                         CompleteDragToGrid(anchorCol, anchorRow);
                         e.Use();
                         return;
@@ -317,13 +332,13 @@ namespace ExtractionDeadIsles.UI
             var e = Event.current;
             for (int i = 0; i < inventory.PocketsHotbar.Count; i++)
             {
-                var slotRect = new Rect(ox + i * STEP, oy, CELL, CELL + 18f);
-                var itemRect = new Rect(slotRect.x, slotRect.y + 16f, CELL, CELL);
+                var slotRect = new Rect(ox + i * _slotStep, oy, _slotSize, _slotSize + HOTBAR_LABEL_H);
+                var itemRect = new Rect(slotRect.x, slotRect.y + HOTBAR_LABEL_H, _slotSize, _slotSize);
                 var slot = inventory.PocketsHotbar[i];
                 bool isHovered = slotRect.Contains(e.mousePosition);
 
                 GUI.color = Color.white;
-                GUI.Label(new Rect(slotRect.x, slotRect.y, CELL, 16f), $"[{i + 1}]");
+                GUI.Label(new Rect(slotRect.x, slotRect.y, _slotSize, HOTBAR_LABEL_H), $"[{i + 1}]");
 
                 if (slot.HasItem)
                 {
