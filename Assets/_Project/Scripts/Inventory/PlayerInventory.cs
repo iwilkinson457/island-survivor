@@ -58,7 +58,13 @@ namespace ExtractionDeadIsles.Inventory
             foreach (var slot in slots)
             {
                 if (remaining <= 0) break;
-                if (onlyExistingStacks && !slot.HasItem) continue;
+
+                if (onlyExistingStacks)
+                {
+                    if (!slot.HasItem) continue;
+                    if (slot.Item != item) continue;
+                }
+
                 if (!slot.CanAccept(item)) continue;
                 remaining = slot.TryAdd(item, remaining);
             }
