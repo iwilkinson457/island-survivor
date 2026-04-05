@@ -1,0 +1,1 @@
+This folder contains the URP Pipeline version of the assets.

@@ -1,0 +1,1 @@
+This folder contains the HDRP Pipeline version of the assets.

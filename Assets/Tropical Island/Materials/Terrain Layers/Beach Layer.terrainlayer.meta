@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 32657d5b3b930cd4c956c1bd1937393d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 8574412962073106934
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 264370
+  packageName: Tropical Island
+  packageVersion: 1.0
+  assetPath: Assets/Tropical Island/Materials/Terrain Layers/Beach Layer.terrainlayer
+  uploadId: 620525

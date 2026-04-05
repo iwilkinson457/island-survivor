@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2c098d30af9c6654c880e72fad7fcb2f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 264370
+  packageName: Tropical Island
+  packageVersion: 1.0
+  assetPath: Assets/Tropical Island/Materials/M_leaf_tropical_01.mat
+  uploadId: 620525

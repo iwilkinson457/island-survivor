@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fe66bff83a857924ea606a580a15bd93
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 8574412962073106934
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 264370
+  packageName: Tropical Island
+  packageVersion: 1.0
+  assetPath: Assets/Tropical Island/Materials/Terrain Layers/Sand Grass Layer.terrainlayer
+  uploadId: 620525

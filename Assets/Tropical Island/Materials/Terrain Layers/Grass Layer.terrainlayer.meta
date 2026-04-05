@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f0ba2ebfe00cf714f8ee10a8101e67f1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 8574412962073106934
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 264370
+  packageName: Tropical Island
+  packageVersion: 1.0
+  assetPath: Assets/Tropical Island/Materials/Terrain Layers/Grass Layer.terrainlayer
+  uploadId: 620525
