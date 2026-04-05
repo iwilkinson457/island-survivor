@@ -27,14 +27,25 @@ namespace ExtractionDeadIsles.Player
             if (cameraTransform == null) return;
 
             Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, interactRange, interactMask))
-            {
-                _currentTarget = hit.collider.GetComponent<IInteractable>()
-                              ?? hit.collider.GetComponentInParent<IInteractable>();
-            }
-            else
+            var hits = Physics.RaycastAll(ray, interactRange, interactMask, QueryTriggerInteraction.Collide);
+            if (hits == null || hits.Length == 0)
             {
                 _currentTarget = null;
+                return;
+            }
+
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            _currentTarget = null;
+
+            foreach (var hit in hits)
+            {
+                var interactable = hit.collider.GetComponent<IInteractable>()
+                                 ?? hit.collider.GetComponentInParent<IInteractable>();
+                if (interactable != null)
+                {
+                    _currentTarget = interactable;
+                    return;
+                }
             }
         }
 

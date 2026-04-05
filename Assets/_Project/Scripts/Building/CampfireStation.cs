@@ -39,7 +39,18 @@ namespace ExtractionDeadIsles.Building
 
         private void Reset()
         {
+            ConfigureTriggerCollider();
+        }
+
+        private void Awake()
+        {
+            ConfigureTriggerCollider();
+        }
+
+        private void ConfigureTriggerCollider()
+        {
             var sphere = GetComponent<SphereCollider>();
+            if (sphere == null) return;
             sphere.isTrigger = true;
             sphere.radius = useRadius;
         }
@@ -57,6 +68,53 @@ namespace ExtractionDeadIsles.Building
                 panel = interactor.AddComponent<CampfirePanel>();
 
             panel.Open(this);
+        }
+
+        public bool TryPlaceInputItem(ItemDefinition item, int amount)
+        {
+            if (!CanAcceptInput(item) || amount <= 0) return false;
+            return inputSlot.TryAdd(item, amount) == 0;
+        }
+
+        public bool TryPlaceFuelItem(ItemDefinition item, int amount)
+        {
+            if (!CanAcceptFuel(item) || amount <= 0) return false;
+            return fuelSlot.TryAdd(item, amount) == 0;
+        }
+
+        public bool TryPlaceOutputItem(ItemDefinition item, int amount)
+        {
+            if (item == null || amount <= 0) return false;
+            if (outputSlot.HasItem && outputSlot.Item != item) return false;
+            return outputSlot.TryAdd(item, amount) == 0;
+        }
+
+        public bool TryTakeInputStack(out ItemDefinition item, out int quantity)
+        {
+            item = inputSlot.Item;
+            quantity = inputSlot.Quantity;
+            if (!inputSlot.HasItem) return false;
+            inputSlot.Clear();
+            currentCookProgress = 0f;
+            return true;
+        }
+
+        public bool TryTakeFuelStack(out ItemDefinition item, out int quantity)
+        {
+            item = fuelSlot.Item;
+            quantity = fuelSlot.Quantity;
+            if (!fuelSlot.HasItem) return false;
+            fuelSlot.Clear();
+            return true;
+        }
+
+        public bool TryTakeOutputStack(out ItemDefinition item, out int quantity)
+        {
+            item = outputSlot.Item;
+            quantity = outputSlot.Quantity;
+            if (!outputSlot.HasItem) return false;
+            outputSlot.Clear();
+            return true;
         }
 
         public void ConfigureCooking(ItemDefinition raw, ItemDefinition cooked)
