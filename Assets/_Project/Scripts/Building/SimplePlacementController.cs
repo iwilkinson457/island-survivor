@@ -123,10 +123,16 @@ namespace ExtractionDeadIsles.Building
             var root = new GameObject("CampfireStation_Runtime");
             root.transform.position = position;
 
+            int interactLayer = LayerMask.NameToLayer("Resource");
+            if (interactLayer >= 0)
+                root.layer = interactLayer;
+
             var baseMesh = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             baseMesh.name = "CampfireVisual";
             baseMesh.transform.SetParent(root.transform, false);
             baseMesh.transform.localScale = new Vector3(0.8f, 0.1f, 0.8f);
+            if (interactLayer >= 0)
+                baseMesh.layer = interactLayer;
 
             var collider = root.AddComponent<SphereCollider>();
             collider.isTrigger = true;
