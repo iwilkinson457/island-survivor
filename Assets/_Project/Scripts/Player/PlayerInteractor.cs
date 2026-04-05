@@ -24,13 +24,21 @@ namespace ExtractionDeadIsles.Player
 
         private void DetectTarget()
         {
-            if (cameraTransform == null) return;
+            if (cameraTransform == null)
+            {
+                _currentTarget = null;
+                return;
+            }
 
             _currentTarget = FindInteractableBySphereCast();
             if (_currentTarget != null)
                 return;
 
             _currentTarget = FindInteractableByOverlap();
+            if (_currentTarget != null)
+                return;
+
+            _currentTarget = FindInteractableByProximityFallback();
         }
 
         private IInteractable FindInteractableBySphereCast()
@@ -59,8 +67,23 @@ namespace ExtractionDeadIsles.Player
             if (colliders == null || colliders.Length == 0)
                 return null;
 
+            return ChooseBestInteractable(colliders);
+        }
+
+        private IInteractable FindInteractableByProximityFallback()
+        {
+            Vector3 probeCenter = cameraTransform.position + cameraTransform.forward * Mathf.Min(interactRange, 1.0f);
+            var colliders = Physics.OverlapSphere(probeCenter, interactRange, ~0, QueryTriggerInteraction.Collide);
+            if (colliders == null || colliders.Length == 0)
+                return null;
+
+            return ChooseBestInteractable(colliders);
+        }
+
+        private IInteractable ChooseBestInteractable(Collider[] colliders)
+        {
             IInteractable best = null;
-            float bestDistance = float.MaxValue;
+            float bestScore = float.MinValue;
 
             foreach (var collider in colliders)
             {
@@ -69,10 +92,21 @@ namespace ExtractionDeadIsles.Player
                 if (interactable == null)
                     continue;
 
-                float distance = Vector3.Distance(cameraTransform.position, collider.ClosestPoint(cameraTransform.position));
-                if (distance < bestDistance)
+                Vector3 closest = collider.ClosestPoint(cameraTransform.position);
+                Vector3 toTarget = closest - cameraTransform.position;
+                float distance = toTarget.magnitude;
+                if (distance > interactRange)
+                    continue;
+
+                Vector3 dir = distance > 0.001f ? toTarget / distance : cameraTransform.forward;
+                float facing = Vector3.Dot(cameraTransform.forward, dir);
+                if (facing < 0.1f)
+                    continue;
+
+                float score = facing * 10f - distance;
+                if (score > bestScore)
                 {
-                    bestDistance = distance;
+                    bestScore = score;
                     best = interactable;
                 }
             }
