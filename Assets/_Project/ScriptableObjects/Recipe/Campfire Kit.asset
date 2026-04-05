@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b853f061b3b72c5439d7907cf57dddca, type: 3}
+  m_Name: Campfire Kit
+  m_EditorClassIdentifier: ExtractionDeadIsles::ExtractionDeadIsles.Crafting.CraftingRecipe
+  recipeId: campfire_kit_recipe
+  displayName: Campfire Kit
+  outputItem: {fileID: 11400000, guid: b3a27ac0daf466a4383800ca1ec776db, type: 2}
+  outputAmount: 1
+  ingredients:
+  - item: {fileID: 11400000, guid: 922f6b56f0f59d246aaf382eebd4324e, type: 2}
+    amount: 3
+  - item: {fileID: 11400000, guid: bc43a058ab6364b47b971487b31c637b, type: 2}
+    amount: 4
+  - item: {fileID: 11400000, guid: d090ee7fead460642babfb5d66dbf3a3, type: 2}
+    amount: 3
+  requiresCampfire: 0
+  unlockedByDefault: 1
