@@ -9,7 +9,7 @@ namespace ExtractionDeadIsles.Items
         public int quantity;
 
         public bool IsEmpty => item == null || quantity <= 0;
-        public int SpaceRemaining => IsEmpty || item == null ? 0 : item.MaxStack - quantity;
+        public int SpaceRemaining => item == null ? 0 : item.MaxStack - quantity;
 
         public bool CanStackWith(ItemDefinition other)
         {
