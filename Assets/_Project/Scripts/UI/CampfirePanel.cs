@@ -298,15 +298,25 @@ namespace ExtractionDeadIsles.UI
 
         private void StartDragFromStation(DragSource source)
         {
-            ItemDefinition item;
-            int quantity;
-            bool ok = source switch
+            ItemDefinition item = null;
+            int quantity = 0;
+            bool ok;
+
+            switch (source)
             {
-                DragSource.CampfireInput => _station.TryTakeInputStack(out item, out quantity),
-                DragSource.CampfireFuel => _station.TryTakeFuelStack(out item, out quantity),
-                DragSource.CampfireOutput => _station.TryTakeOutputStack(out item, out quantity),
-                _ => false
-            };
+                case DragSource.CampfireInput:
+                    ok = _station.TryTakeInputStack(out item, out quantity);
+                    break;
+                case DragSource.CampfireFuel:
+                    ok = _station.TryTakeFuelStack(out item, out quantity);
+                    break;
+                case DragSource.CampfireOutput:
+                    ok = _station.TryTakeOutputStack(out item, out quantity);
+                    break;
+                default:
+                    ok = false;
+                    break;
+            }
 
             if (!ok)
                 return;
