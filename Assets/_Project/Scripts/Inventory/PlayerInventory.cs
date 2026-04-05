@@ -8,23 +8,37 @@ namespace ExtractionDeadIsles.Inventory
 {
     public class PlayerInventory : MonoBehaviour
     {
-        [SerializeField] private int backpackSize = 20;
+        [SerializeField] private int backpackGridCapacity = 20;
         [SerializeField] private int hotbarSize = 6;
 
-        private List<InventorySlot> _backpack;
-        private List<InventorySlot> _hotbar;
+        // --- Domain: BackpackGrid ---
+        private List<InventorySlot> _backpackGrid;
+
+        // --- Domain: PocketsHotbar ---
+        private List<InventorySlot> _pocketsHotbar;
+
+        // --- Domain: Equipment ---
+        private EquipmentSlot[] _equipmentSlots;
 
         public event Action OnInventoryChanged;
 
-        public IReadOnlyList<InventorySlot> Backpack => _backpack;
-        public IReadOnlyList<InventorySlot> Hotbar => _hotbar;
-        public int BackpackSize => backpackSize;
+        // Domain-explicit properties
+        public IReadOnlyList<InventorySlot> BackpackGrid => _backpackGrid;
+        public IReadOnlyList<InventorySlot> PocketsHotbar => _pocketsHotbar;
+        public IReadOnlyList<EquipmentSlot> EquipmentSlots => _equipmentSlots;
+        public int BackpackGridCapacity => backpackGridCapacity;
         public int HotbarSize => hotbarSize;
+
+        // Legacy-compatible aliases (used by InventoryDebugPanel and other callers)
+        public IReadOnlyList<InventorySlot> Backpack => _backpackGrid;
+        public IReadOnlyList<InventorySlot> Hotbar => _pocketsHotbar;
+        public int BackpackSize => backpackGridCapacity;
 
         private void Awake()
         {
-            _backpack = CreateSlots(backpackSize);
-            _hotbar = CreateSlots(hotbarSize);
+            _pocketsHotbar = CreateSlots(hotbarSize);
+            _backpackGrid = CreateSlots(backpackGridCapacity);
+            _equipmentSlots = CreateEquipmentSlots();
         }
 
         private List<InventorySlot> CreateSlots(int count)
@@ -36,15 +50,67 @@ namespace ExtractionDeadIsles.Inventory
             return slots;
         }
 
+        private EquipmentSlot[] CreateEquipmentSlots()
+        {
+            var types = (EquipmentSlotType[])Enum.GetValues(typeof(EquipmentSlotType));
+            var slots = new EquipmentSlot[types.Length];
+            for (int i = 0; i < types.Length; i++)
+                slots[i] = new EquipmentSlot(types[i]);
+            return slots;
+        }
+
+        // -------------------------------------------------------------------------
+        // Equipment domain
+        // -------------------------------------------------------------------------
+
+        public EquipmentSlot GetEquipmentSlot(EquipmentSlotType slotType)
+        {
+            foreach (var slot in _equipmentSlots)
+                if (slot.SlotType == slotType) return slot;
+            return null;
+        }
+
+        /// <summary>
+        /// Equips an item into the specified equipment slot.
+        /// Returns false if the slot rejects the item (wrong type or already occupied).
+        /// Does NOT remove the item from storage — caller is responsible for that.
+        /// </summary>
+        public bool TryEquipItem(ItemDefinition item, EquipmentSlotType slotType)
+        {
+            if (item == null) return false;
+            var slot = GetEquipmentSlot(slotType);
+            if (slot == null) return false;
+            if (!slot.TryEquip(item)) return false;
+            NotifyChanged();
+            return true;
+        }
+
+        /// <summary>
+        /// Removes and returns the item in the given equipment slot, or null if empty.
+        /// Does NOT add the item back to storage — caller is responsible for that.
+        /// </summary>
+        public ItemDefinition UnequipItem(EquipmentSlotType slotType)
+        {
+            var slot = GetEquipmentSlot(slotType);
+            if (slot == null) return null;
+            var item = slot.Unequip();
+            if (item != null) NotifyChanged();
+            return item;
+        }
+
+        // -------------------------------------------------------------------------
+        // Storage domains (PocketsHotbar + BackpackGrid)
+        // -------------------------------------------------------------------------
+
         public bool TryAddItem(ItemDefinition item, int amount)
         {
             if (item == null || amount <= 0) return false;
             int remaining = amount;
 
-            remaining = AddToCollection(_hotbar, item, remaining, onlyExistingStacks: true);
-            remaining = AddToCollection(_backpack, item, remaining, onlyExistingStacks: true);
-            remaining = AddToCollection(_hotbar, item, remaining, onlyExistingStacks: false);
-            remaining = AddToCollection(_backpack, item, remaining, onlyExistingStacks: false);
+            remaining = AddToCollection(_pocketsHotbar, item, remaining, onlyExistingStacks: true);
+            remaining = AddToCollection(_backpackGrid, item, remaining, onlyExistingStacks: true);
+            remaining = AddToCollection(_pocketsHotbar, item, remaining, onlyExistingStacks: false);
+            remaining = AddToCollection(_backpackGrid, item, remaining, onlyExistingStacks: false);
 
             if (remaining != amount)
                 NotifyChanged();
@@ -82,8 +148,8 @@ namespace ExtractionDeadIsles.Inventory
         {
             if (item == null) return 0;
             int total = 0;
-            CountInCollection(_hotbar, item, ref total);
-            CountInCollection(_backpack, item, ref total);
+            CountInCollection(_pocketsHotbar, item, ref total);
+            CountInCollection(_backpackGrid, item, ref total);
             return total;
         }
 
@@ -99,8 +165,8 @@ namespace ExtractionDeadIsles.Inventory
             if (!HasItems(item, amount)) return false;
 
             int remaining = amount;
-            remaining = RemoveFromCollection(_hotbar, item, remaining);
-            remaining = RemoveFromCollection(_backpack, item, remaining);
+            remaining = RemoveFromCollection(_pocketsHotbar, item, remaining);
+            remaining = RemoveFromCollection(_backpackGrid, item, remaining);
             NotifyChanged();
             return remaining <= 0;
         }
@@ -126,19 +192,19 @@ namespace ExtractionDeadIsles.Inventory
         public bool TryGetHotbarSlot(int index, out InventorySlot slot)
         {
             slot = null;
-            if (_hotbar == null || index < 0 || index >= _hotbar.Count) return false;
-            slot = _hotbar[index];
+            if (_pocketsHotbar == null || index < 0 || index >= _pocketsHotbar.Count) return false;
+            slot = _pocketsHotbar[index];
             return true;
         }
 
         public bool TryMoveToHotbar(int backpackIndex, int hotbarIndex)
         {
-            if (_backpack == null || _hotbar == null) return false;
-            if (backpackIndex < 0 || backpackIndex >= _backpack.Count) return false;
-            if (hotbarIndex < 0 || hotbarIndex >= _hotbar.Count) return false;
+            if (_backpackGrid == null || _pocketsHotbar == null) return false;
+            if (backpackIndex < 0 || backpackIndex >= _backpackGrid.Count) return false;
+            if (hotbarIndex < 0 || hotbarIndex >= _pocketsHotbar.Count) return false;
 
-            var backpackSlot = _backpack[backpackIndex];
-            var hotbarSlot = _hotbar[hotbarIndex];
+            var backpackSlot = _backpackGrid[backpackIndex];
+            var hotbarSlot = _pocketsHotbar[hotbarIndex];
             var tempStack = hotbarSlot.Stack;
             hotbarSlot.Stack = backpackSlot.Stack;
             backpackSlot.Stack = tempStack;
@@ -149,10 +215,13 @@ namespace ExtractionDeadIsles.Inventory
         public string GetInventoryDebugSummary()
         {
             var sb = new StringBuilder();
+            sb.AppendLine("Equipment:");
+            foreach (var slot in _equipmentSlots)
+                sb.AppendLine($"  [{slot.SlotType}] {(slot.HasItem ? slot.Item.DisplayName : "Empty")}");
             sb.AppendLine("Hotbar:");
-            AppendCollection(sb, _hotbar);
-            sb.AppendLine("Backpack:");
-            AppendCollection(sb, _backpack);
+            AppendCollection(sb, _pocketsHotbar);
+            sb.AppendLine("Backpack Grid:");
+            AppendCollection(sb, _backpackGrid);
             return sb.ToString();
         }
 
@@ -172,8 +241,8 @@ namespace ExtractionDeadIsles.Inventory
         {
             if (item == null || amount <= 0) return false;
             int capacity = 0;
-            CalculateCapacity(_hotbar, item, ref capacity);
-            CalculateCapacity(_backpack, item, ref capacity);
+            CalculateCapacity(_pocketsHotbar, item, ref capacity);
+            CalculateCapacity(_backpackGrid, item, ref capacity);
             return capacity >= amount;
         }
 
